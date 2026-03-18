@@ -1,8 +1,6 @@
 package com.example.rokidsettingshub.data.storage
 
-import com.example.rokidsettingshub.model.DeviceConnectionState
-import com.example.rokidsettingshub.model.DeviceType
-import com.example.rokidsettingshub.model.ManagedDevice
+import android.content.SharedPreferences
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
@@ -11,58 +9,141 @@ class MainPhoneStoreTest {
 
     @Test
     fun saveAndLoadPersistsMainPhoneSnapshot() {
-        val backing = mutableMapOf<String, String>()
-        val writer = MainPhoneStore(FakeKeyValueStorage(backing))
-        val mainPhone = ManagedDevice(
+        val sharedPreferences = FakeSharedPreferences()
+        val writer = MainPhoneStore(sharedPreferences)
+        val snapshot = StoredMainPhone(
             address = "AA:BB:CC:DD:EE:11",
             name = "Pixel 10",
-            deviceType = DeviceType.Phone,
-            connectionState = DeviceConnectionState.Connected,
-            isMainPhone = true,
         )
 
-        writer.save(mainPhone)
+        writer.save(snapshot)
 
-        val reader = MainPhoneStore(FakeKeyValueStorage(backing))
+        val reader = MainPhoneStore(sharedPreferences)
 
-        assertEquals(
-            StoredMainPhone(
-                address = mainPhone.address,
-                name = mainPhone.name,
-            ),
-            reader.load(),
-        )
+        assertEquals(snapshot, reader.load())
     }
 
     @Test
-    fun clearRemovesPersistedMainPhone() {
-        val backing = mutableMapOf<String, String>()
-        val store = MainPhoneStore(FakeKeyValueStorage(backing))
-        val mainPhone = ManagedDevice(
-            address = "AA:BB:CC:DD:EE:12",
-            name = "Galaxy S30",
-            deviceType = DeviceType.Phone,
-            connectionState = DeviceConnectionState.Paired,
-            isMainPhone = true,
+    fun saveWritesSnapshotInSingleSharedPreferencesEdit() {
+        val sharedPreferences = FakeSharedPreferences()
+        val store = MainPhoneStore(sharedPreferences)
+
+        store.save(
+            StoredMainPhone(
+                address = "AA:BB:CC:DD:EE:12",
+                name = "Galaxy S30",
+            ),
         )
 
-        store.save(mainPhone)
-        store.clear()
+        assertEquals(1, sharedPreferences.editCallCount)
+        assertEquals(1, sharedPreferences.appliedTransactions.size)
+        assertEquals(2, sharedPreferences.appliedTransactions.single().size)
+    }
+
+    @Test
+    fun loadReturnsNullWhenSnapshotIsIncomplete() {
+        val sharedPreferences = FakeSharedPreferences().apply {
+            edit().putString("main_phone_address", "AA:BB:CC:DD:EE:13").apply()
+        }
+        val store = MainPhoneStore(sharedPreferences)
 
         assertNull(store.load())
     }
 
-    private class FakeKeyValueStorage(
-        private val values: MutableMap<String, String>,
-    ) : MainPhoneStore.KeyValueStorage {
-        override fun getString(key: String): String? = values[key]
+    private class FakeSharedPreferences : SharedPreferences {
+        private val values = mutableMapOf<String, Any?>()
+        var editCallCount = 0
+            private set
+        val appliedTransactions = mutableListOf<Map<String, Any?>>()
 
-        override fun putString(key: String, value: String) {
-            values[key] = value
+        override fun getAll(): MutableMap<String, *> = values.toMutableMap()
+
+        override fun getString(key: String?, defValue: String?): String? {
+            return values[key] as? String ?: defValue
         }
 
-        override fun remove(key: String) {
-            values.remove(key)
+        override fun getStringSet(key: String?, defValues: MutableSet<String>?): MutableSet<String>? {
+            @Suppress("UNCHECKED_CAST")
+            return (values[key] as? MutableSet<String>) ?: defValues
+        }
+
+        override fun getInt(key: String?, defValue: Int): Int = values[key] as? Int ?: defValue
+
+        override fun getLong(key: String?, defValue: Long): Long = values[key] as? Long ?: defValue
+
+        override fun getFloat(key: String?, defValue: Float): Float = values[key] as? Float ?: defValue
+
+        override fun getBoolean(key: String?, defValue: Boolean): Boolean = values[key] as? Boolean ?: defValue
+
+        override fun contains(key: String?): Boolean = values.containsKey(key)
+
+        override fun edit(): SharedPreferences.Editor {
+            editCallCount += 1
+            return FakeEditor()
+        }
+
+        override fun registerOnSharedPreferenceChangeListener(listener: SharedPreferences.OnSharedPreferenceChangeListener?) = Unit
+
+        override fun unregisterOnSharedPreferenceChangeListener(listener: SharedPreferences.OnSharedPreferenceChangeListener?) = Unit
+
+        private inner class FakeEditor : SharedPreferences.Editor {
+            private val pending = linkedMapOf<String, Any?>()
+            private var clearRequested = false
+
+            override fun putString(key: String?, value: String?): SharedPreferences.Editor = apply {
+                pending[key.orEmpty()] = value
+            }
+
+            override fun putStringSet(key: String?, values: MutableSet<String>?): SharedPreferences.Editor = apply {
+                pending[key.orEmpty()] = values
+            }
+
+            override fun putInt(key: String?, value: Int): SharedPreferences.Editor = apply {
+                pending[key.orEmpty()] = value
+            }
+
+            override fun putLong(key: String?, value: Long): SharedPreferences.Editor = apply {
+                pending[key.orEmpty()] = value
+            }
+
+            override fun putFloat(key: String?, value: Float): SharedPreferences.Editor = apply {
+                pending[key.orEmpty()] = value
+            }
+
+            override fun putBoolean(key: String?, value: Boolean): SharedPreferences.Editor = apply {
+                pending[key.orEmpty()] = value
+            }
+
+            override fun remove(key: String?): SharedPreferences.Editor = apply {
+                pending[key.orEmpty()] = REMOVED
+            }
+
+            override fun clear(): SharedPreferences.Editor = apply {
+                clearRequested = true
+            }
+
+            override fun commit(): Boolean {
+                apply()
+                return true
+            }
+
+            override fun apply() {
+                if (clearRequested) {
+                    values.clear()
+                }
+                appliedTransactions += pending.toMap()
+                pending.forEach { (key, value) ->
+                    if (value === REMOVED) {
+                        values.remove(key)
+                    } else {
+                        values[key] = value
+                    }
+                }
+            }
+        }
+
+        private companion object {
+            val REMOVED = Any()
         }
     }
 }
