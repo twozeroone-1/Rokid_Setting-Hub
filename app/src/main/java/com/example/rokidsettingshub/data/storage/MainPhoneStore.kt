@@ -19,7 +19,9 @@ class MainPhoneStore(
 
     fun load(): StoredMainPhone? {
         val address = sharedPreferences.getString(KEY_ADDRESS, null) ?: return null
-        val name = sharedPreferences.getString(KEY_NAME, null) ?: return null
+        val name = sharedPreferences.getString(KEY_NAME, null)
+            .takeUnless { it.isNullOrBlank() }
+            ?: address
         return StoredMainPhone(
             address = address,
             name = name,

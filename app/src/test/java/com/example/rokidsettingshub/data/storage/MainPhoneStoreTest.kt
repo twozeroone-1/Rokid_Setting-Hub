@@ -41,13 +41,24 @@ class MainPhoneStoreTest {
     }
 
     @Test
-    fun loadReturnsNullWhenSnapshotIsIncomplete() {
-        val sharedPreferences = FakeSharedPreferences().apply {
-            edit().putString("main_phone_address", "AA:BB:CC:DD:EE:13").apply()
-        }
+    fun loadFallsBackToAddressWhenNameSnapshotIsMissing() {
+        val sharedPreferences = FakeSharedPreferences()
         val store = MainPhoneStore(sharedPreferences)
+        val snapshot = StoredMainPhone(
+            address = "AA:BB:CC:DD:EE:13",
+            name = "Pixel Fold",
+        )
 
-        assertNull(store.load())
+        store.save(snapshot)
+        sharedPreferences.removeStoredValue(snapshot.name)
+
+        assertEquals(
+            StoredMainPhone(
+                address = snapshot.address,
+                name = snapshot.address,
+            ),
+            store.load(),
+        )
     }
 
     private class FakeSharedPreferences : SharedPreferences {
@@ -85,6 +96,11 @@ class MainPhoneStoreTest {
         override fun registerOnSharedPreferenceChangeListener(listener: SharedPreferences.OnSharedPreferenceChangeListener?) = Unit
 
         override fun unregisterOnSharedPreferenceChangeListener(listener: SharedPreferences.OnSharedPreferenceChangeListener?) = Unit
+
+        fun removeStoredValue(value: String) {
+            val key = values.entries.first { it.value == value }.key
+            values.remove(key)
+        }
 
         private inner class FakeEditor : SharedPreferences.Editor {
             private val pending = linkedMapOf<String, Any?>()
