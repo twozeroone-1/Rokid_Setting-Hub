@@ -11,8 +11,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.example.rokidsettingshub.R
+import com.example.rokidsettingshub.model.BluetoothFocusState
 import com.example.rokidsettingshub.model.BluetoothScreenState
 import com.example.rokidsettingshub.model.HubSection
+import com.example.rokidsettingshub.model.BluetoothFocusSection
 import com.example.rokidsettingshub.ui.bluetooth.BluetoothScreen
 import com.example.rokidsettingshub.ui.common.SectionCard
 
@@ -20,6 +22,11 @@ import com.example.rokidsettingshub.ui.common.SectionCard
 fun HubScreen(
     currentSection: HubSection?,
     bluetoothState: BluetoothScreenState,
+    bluetoothFocusState: BluetoothFocusState,
+    onMoveBluetoothFocus: (Int, Long) -> Unit,
+    onSelectBluetoothSection: (BluetoothFocusSection) -> Unit,
+    onActivateBluetoothSection: () -> Unit,
+    onBackFromBluetoothDetail: () -> Unit,
     onSectionSelected: (HubSection) -> Unit,
     onBackFromSection: () -> Unit,
     modifier: Modifier = Modifier,
@@ -27,6 +34,11 @@ fun HubScreen(
     when (currentSection) {
         HubSection.Bluetooth -> BluetoothScreen(
             state = bluetoothState,
+            navigationState = bluetoothFocusState,
+            onMoveFocus = onMoveBluetoothFocus,
+            onSelectSection = onSelectBluetoothSection,
+            onActivateSelectedSection = onActivateBluetoothSection,
+            onBackFromDetail = onBackFromBluetoothDetail,
             onBack = onBackFromSection,
             modifier = modifier,
         )

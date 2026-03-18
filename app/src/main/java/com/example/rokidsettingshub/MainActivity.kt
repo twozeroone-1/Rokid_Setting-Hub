@@ -22,10 +22,16 @@ class MainActivity : ComponentActivity() {
             val hubViewModel: HubViewModel = viewModel()
             val currentSection by hubViewModel.currentSection.collectAsState()
             val bluetoothScreenState by hubViewModel.bluetoothScreenState.collectAsState()
+            val bluetoothFocusState by hubViewModel.bluetoothFocusState.collectAsState()
 
             HubScreen(
                 currentSection = currentSection,
                 bluetoothState = bluetoothScreenState,
+                bluetoothFocusState = bluetoothFocusState,
+                onMoveBluetoothFocus = hubViewModel::moveBluetoothFocus,
+                onSelectBluetoothSection = hubViewModel::selectBluetoothSection,
+                onActivateBluetoothSection = hubViewModel::activateSelectedBluetoothSection,
+                onBackFromBluetoothDetail = hubViewModel::handleBluetoothBack,
                 onSectionSelected = hubViewModel::selectSection,
                 onBackFromSection = hubViewModel::returnToHub,
             )

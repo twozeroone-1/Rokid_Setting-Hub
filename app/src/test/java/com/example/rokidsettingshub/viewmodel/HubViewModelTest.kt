@@ -4,13 +4,16 @@ import com.example.rokidsettingshub.data.bluetooth.BluetoothDeviceActions
 import com.example.rokidsettingshub.data.bluetooth.BluetoothRepository
 import com.example.rokidsettingshub.data.bluetooth.BluetoothScanner
 import com.example.rokidsettingshub.data.bluetooth.BondedDeviceSource
+import com.example.rokidsettingshub.model.BluetoothFocusSection
 import com.example.rokidsettingshub.data.storage.StoredMainPhone
 import com.example.rokidsettingshub.model.DeviceConnectionState
 import com.example.rokidsettingshub.model.DeviceType
 import com.example.rokidsettingshub.model.HubSection
 import com.example.rokidsettingshub.model.ManagedDevice
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class HubViewModelTest {
@@ -85,6 +88,46 @@ class HubViewModelTest {
             listOf(scannedDevice),
             viewModel.bluetoothScreenState.value.availableDevices,
         )
+    }
+
+    @Test
+    fun bluetoothFocusStartsAtStatusSection() {
+        val viewModel = HubViewModel()
+
+        assertEquals(BluetoothFocusSection.Status, viewModel.bluetoothFocusState.value.selectedSection)
+        assertNull(viewModel.bluetoothFocusState.value.detailSection)
+    }
+
+    @Test
+    fun rapidBluetoothNavigationOnlyMovesOneSection() {
+        val viewModel = HubViewModel()
+
+        viewModel.moveBluetoothFocus(direction = 1, eventUptimeMs = 1_000L)
+        viewModel.moveBluetoothFocus(direction = 1, eventUptimeMs = 1_080L)
+
+        assertEquals(BluetoothFocusSection.MainPhone, viewModel.bluetoothFocusState.value.selectedSection)
+    }
+
+    @Test
+    fun activatingSelectedBluetoothSectionOpensDetail() {
+        val viewModel = HubViewModel()
+
+        viewModel.moveBluetoothFocus(direction = 1, eventUptimeMs = 1_000L)
+        viewModel.moveBluetoothFocus(direction = 1, eventUptimeMs = 1_250L)
+        viewModel.activateSelectedBluetoothSection()
+
+        assertEquals(BluetoothFocusSection.MyDevices, viewModel.bluetoothFocusState.value.detailSection)
+    }
+
+    @Test
+    fun bluetoothBackClosesDetailBeforeLeavingHub() {
+        val viewModel = HubViewModel()
+
+        viewModel.activateSelectedBluetoothSection()
+
+        assertTrue(viewModel.handleBluetoothBack())
+        assertNull(viewModel.bluetoothFocusState.value.detailSection)
+        assertFalse(viewModel.handleBluetoothBack())
     }
 
     private class FakeBondedDeviceSource(

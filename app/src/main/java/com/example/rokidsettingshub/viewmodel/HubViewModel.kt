@@ -5,6 +5,8 @@ import com.example.rokidsettingshub.data.bluetooth.BluetoothDeviceActions
 import com.example.rokidsettingshub.data.bluetooth.BluetoothRepository
 import com.example.rokidsettingshub.data.bluetooth.BluetoothScanner
 import com.example.rokidsettingshub.data.bluetooth.BondedDeviceSource
+import com.example.rokidsettingshub.model.BluetoothFocusSection
+import com.example.rokidsettingshub.model.BluetoothFocusState
 import com.example.rokidsettingshub.model.BluetoothScreenState
 import com.example.rokidsettingshub.model.HubSection
 import com.example.rokidsettingshub.model.ManagedDevice
@@ -22,16 +24,68 @@ class HubViewModel(
 ) : ViewModel() {
     private val _currentSection = MutableStateFlow<HubSection?>(null)
     val currentSection: StateFlow<HubSection?> = _currentSection.asStateFlow()
+    private val _bluetoothFocusState = MutableStateFlow(BluetoothFocusState())
+    val bluetoothFocusState: StateFlow<BluetoothFocusState> = _bluetoothFocusState.asStateFlow()
     val bluetoothScreenState: StateFlow<BluetoothScreenState> = bluetoothRepository.state
+    private var lastBluetoothMoveUptimeMs = Long.MIN_VALUE
 
     fun selectSection(section: HubSection) {
+        if (section == HubSection.Bluetooth) {
+            _bluetoothFocusState.value = BluetoothFocusState()
+            lastBluetoothMoveUptimeMs = Long.MIN_VALUE
+        }
         _currentSection.value = section
     }
 
     fun returnToHub() {
         _currentSection.value = null
     }
+
+    fun moveBluetoothFocus(direction: Int, eventUptimeMs: Long) {
+        if (_bluetoothFocusState.value.detailSection != null) {
+            return
+        }
+        if (
+            lastBluetoothMoveUptimeMs != Long.MIN_VALUE &&
+            eventUptimeMs - lastBluetoothMoveUptimeMs < BLUETOOTH_MOVE_DEBOUNCE_MS
+        ) {
+            return
+        }
+
+        val sections = BluetoothFocusSection.entries
+        val currentIndex = sections.indexOf(_bluetoothFocusState.value.selectedSection)
+        val nextIndex = (currentIndex + direction).coerceIn(0, sections.lastIndex)
+        if (nextIndex == currentIndex) {
+            return
+        }
+
+        _bluetoothFocusState.value = _bluetoothFocusState.value.copy(
+            selectedSection = sections[nextIndex],
+        )
+        lastBluetoothMoveUptimeMs = eventUptimeMs
+    }
+
+    fun selectBluetoothSection(section: BluetoothFocusSection) {
+        _bluetoothFocusState.value = _bluetoothFocusState.value.copy(selectedSection = section)
+    }
+
+    fun activateSelectedBluetoothSection() {
+        _bluetoothFocusState.value = _bluetoothFocusState.value.copy(
+            detailSection = _bluetoothFocusState.value.selectedSection,
+        )
+    }
+
+    fun handleBluetoothBack(): Boolean {
+        if (_bluetoothFocusState.value.detailSection == null) {
+            return false
+        }
+
+        _bluetoothFocusState.value = _bluetoothFocusState.value.copy(detailSection = null)
+        return true
+    }
 }
+
+private const val BLUETOOTH_MOVE_DEBOUNCE_MS = 180L
 
 private object EmptyBondedDeviceSource : BondedDeviceSource {
     override fun loadBondedDevices(): List<ManagedDevice> = emptyList()
