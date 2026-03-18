@@ -5,9 +5,12 @@ import com.example.rokidsettingshub.data.bluetooth.BluetoothDeviceActions
 import com.example.rokidsettingshub.data.bluetooth.BluetoothRepository
 import com.example.rokidsettingshub.data.bluetooth.BluetoothScanner
 import com.example.rokidsettingshub.data.bluetooth.BondedDeviceSource
+import com.example.rokidsettingshub.data.deviceinfo.DeviceInfoSource
+import com.example.rokidsettingshub.data.deviceinfo.UnavailableDeviceInfoSource
 import com.example.rokidsettingshub.model.BluetoothFocusSection
 import com.example.rokidsettingshub.model.BluetoothFocusState
 import com.example.rokidsettingshub.model.BluetoothScreenState
+import com.example.rokidsettingshub.model.DeviceInfoState
 import com.example.rokidsettingshub.model.HubSection
 import com.example.rokidsettingshub.model.ManagedDevice
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -21,9 +24,14 @@ class HubViewModel(
         deviceActions = NoOpBluetoothDeviceActions,
         loadMainPhone = { null },
     ),
+    deviceInfoSource: DeviceInfoSource = UnavailableDeviceInfoSource,
 ) : ViewModel() {
     private val _currentSection = MutableStateFlow<HubSection?>(null)
     val currentSection: StateFlow<HubSection?> = _currentSection.asStateFlow()
+    private val _selectedHubSection = MutableStateFlow(HubSection.Bluetooth)
+    val selectedHubSection: StateFlow<HubSection> = _selectedHubSection.asStateFlow()
+    private val _deviceInfoState = MutableStateFlow(deviceInfoSource.load())
+    val deviceInfoState: StateFlow<DeviceInfoState> = _deviceInfoState.asStateFlow()
     private val _bluetoothFocusState = MutableStateFlow(BluetoothFocusState())
     val bluetoothFocusState: StateFlow<BluetoothFocusState> = _bluetoothFocusState.asStateFlow()
     val bluetoothScreenState: StateFlow<BluetoothScreenState> = bluetoothRepository.state
@@ -31,6 +39,7 @@ class HubViewModel(
     private var lastBluetoothMoveDirection = 0
 
     fun selectSection(section: HubSection) {
+        _selectedHubSection.value = section
         if (section == HubSection.Bluetooth) {
             _bluetoothFocusState.value = BluetoothFocusState()
             lastBluetoothMoveUptimeMs = Long.MIN_VALUE
@@ -41,6 +50,21 @@ class HubViewModel(
 
     fun returnToHub() {
         _currentSection.value = null
+    }
+
+    fun moveHubSelection(direction: Int) {
+        if (_currentSection.value != null) {
+            return
+        }
+
+        val sections = HubSection.entries
+        val currentIndex = sections.indexOf(_selectedHubSection.value)
+        val nextIndex = (currentIndex + direction).coerceIn(0, sections.lastIndex)
+        _selectedHubSection.value = sections[nextIndex]
+    }
+
+    fun activateSelectedHubSection() {
+        selectSection(_selectedHubSection.value)
     }
 
     fun moveBluetoothFocus(direction: Int, eventUptimeMs: Long) {

@@ -22,7 +22,7 @@ internal fun sectionCopyFor(section: HubSection): SectionCopy = when (section) {
         placeholderBodyResId = R.string.section_battery_placeholder_body,
     )
     HubSection.DeviceInfo -> SectionCopy(
-        cardBodyResId = R.string.section_placeholder_card_body,
+        cardBodyResId = R.string.section_device_info_card_body,
         placeholderBodyResId = R.string.section_device_info_placeholder_body,
     )
 }

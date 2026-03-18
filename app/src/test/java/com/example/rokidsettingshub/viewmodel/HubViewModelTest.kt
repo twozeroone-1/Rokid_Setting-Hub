@@ -4,8 +4,11 @@ import com.example.rokidsettingshub.data.bluetooth.BluetoothDeviceActions
 import com.example.rokidsettingshub.data.bluetooth.BluetoothRepository
 import com.example.rokidsettingshub.data.bluetooth.BluetoothScanner
 import com.example.rokidsettingshub.data.bluetooth.BondedDeviceSource
+import com.example.rokidsettingshub.data.deviceinfo.DeviceInfoSource
 import com.example.rokidsettingshub.model.BluetoothFocusSection
 import com.example.rokidsettingshub.data.storage.StoredMainPhone
+import com.example.rokidsettingshub.model.DeviceInfoSnapshot
+import com.example.rokidsettingshub.model.DeviceInfoState
 import com.example.rokidsettingshub.model.DeviceConnectionState
 import com.example.rokidsettingshub.model.DeviceType
 import com.example.rokidsettingshub.model.HubSection
@@ -27,6 +30,50 @@ class HubViewModelTest {
         viewModel.selectSection(HubSection.Bluetooth)
 
         assertEquals(HubSection.Bluetooth, viewModel.currentSection.value)
+    }
+
+    @Test
+    fun hubSelectionStartsAtBluetooth() {
+        val viewModel = HubViewModel()
+
+        assertEquals(HubSection.Bluetooth, viewModel.selectedHubSection.value)
+    }
+
+    @Test
+    fun movingHubSelectionChangesSelectedSection() {
+        val viewModel = HubViewModel()
+
+        viewModel.moveHubSelection(direction = 1)
+        viewModel.moveHubSelection(direction = 1)
+
+        assertEquals(HubSection.Battery, viewModel.selectedHubSection.value)
+    }
+
+    @Test
+    fun activatingSelectedHubSectionOpensIt() {
+        val viewModel = HubViewModel()
+
+        viewModel.moveHubSelection(direction = 1)
+        viewModel.activateSelectedHubSection()
+
+        assertEquals(HubSection.WiFi, viewModel.currentSection.value)
+    }
+
+    @Test
+    fun deviceInfoStateIsLoadedFromSource() {
+        val expected = DeviceInfoState.fromSnapshot(
+            DeviceInfoSnapshot(
+                modelName = "Rokid Glasses",
+                androidVersion = "12",
+                totalStorageBytes = 32L * 1024L * 1024L * 1024L,
+                freeStorageBytes = 12L * 1024L * 1024L * 1024L,
+            ),
+        )
+        val viewModel = HubViewModel(
+            deviceInfoSource = FakeDeviceInfoSource(expected),
+        )
+
+        assertEquals(expected, viewModel.deviceInfoState.value)
     }
 
     @Test
@@ -247,5 +294,11 @@ class HubViewModelTest {
         }
 
         override fun forget(address: String) = Unit
+    }
+
+    private class FakeDeviceInfoSource(
+        private val state: DeviceInfoState,
+    ) : DeviceInfoSource {
+        override fun load(): DeviceInfoState = state
     }
 }

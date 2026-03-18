@@ -12,6 +12,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.rokidsettingshub.data.bluetooth.createBluetoothRepository
+import com.example.rokidsettingshub.data.deviceinfo.AndroidDeviceInfoSource
 import com.example.rokidsettingshub.data.storage.MainPhoneStore
 import com.example.rokidsettingshub.ui.hub.HubScreen
 import com.example.rokidsettingshub.viewmodel.HubViewModel
@@ -27,10 +28,16 @@ class MainActivity : ComponentActivity() {
     }
 
     private val hubViewModelFactory by lazy {
+        val deviceInfoSource = AndroidDeviceInfoSource(
+            dataDirectory = applicationContext.filesDir,
+        )
         object : ViewModelProvider.Factory {
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
                 @Suppress("UNCHECKED_CAST")
-                return HubViewModel(bluetoothRepository = bluetoothRepository) as T
+                return HubViewModel(
+                    bluetoothRepository = bluetoothRepository,
+                    deviceInfoSource = deviceInfoSource,
+                ) as T
             }
         }
     }
@@ -43,13 +50,19 @@ class MainActivity : ComponentActivity() {
         setContent {
             val hubViewModel: HubViewModel = viewModel(factory = hubViewModelFactory)
             val currentSection by hubViewModel.currentSection.collectAsState()
+            val selectedHubSection by hubViewModel.selectedHubSection.collectAsState()
             val bluetoothScreenState by hubViewModel.bluetoothScreenState.collectAsState()
+            val deviceInfoState by hubViewModel.deviceInfoState.collectAsState()
             val bluetoothFocusState by hubViewModel.bluetoothFocusState.collectAsState()
 
             HubScreen(
                 currentSection = currentSection,
+                selectedHubSection = selectedHubSection,
                 bluetoothState = bluetoothScreenState,
+                deviceInfoState = deviceInfoState,
                 bluetoothFocusState = bluetoothFocusState,
+                onMoveHubSelection = hubViewModel::moveHubSelection,
+                onActivateHubSection = hubViewModel::activateSelectedHubSection,
                 onMoveBluetoothFocus = hubViewModel::moveBluetoothFocus,
                 onStartBluetoothScan = hubViewModel::startBluetoothScan,
                 onStopBluetoothScan = hubViewModel::stopBluetoothScan,

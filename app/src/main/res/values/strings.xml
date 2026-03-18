@@ -12,6 +12,7 @@
 
     <string name="section_bluetooth_card_body">Open Bluetooth settings.</string>
     <string name="section_wifi_card_body">Wi-Fi hardware is present, but setup remains limited in v1.</string>
+    <string name="section_device_info_card_body">View model, Android version, and storage usage.</string>
     <string name="section_placeholder_card_body">Simple read-only placeholder for a later task.</string>
 
     <string name="bluetooth_placeholder_body">Bluetooth details will be implemented in a later task.</string>
@@ -45,4 +46,7 @@
     <string name="section_wifi_placeholder_body">Wi-Fi is available on this device, but connection and confirmation flow remain limited in v1.</string>
     <string name="section_battery_placeholder_body">Battery details are coming soon. This screen is read-only for now.</string>
     <string name="section_device_info_placeholder_body">Device info is coming soon. This screen is read-only for now.</string>
+    <string name="section_device_info_body">Read-only hardware and storage summary for this device.</string>
+    <string name="section_device_info_hint_next">Tap once or press down for more.</string>
+    <string name="section_device_info_hint_previous">Press up to review the earlier items.</string>
 </resources>

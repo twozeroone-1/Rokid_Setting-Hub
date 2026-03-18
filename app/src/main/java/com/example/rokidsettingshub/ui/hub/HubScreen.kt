@@ -1,5 +1,6 @@
 package com.example.rokidsettingshub.ui.hub
 
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -7,11 +8,21 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.example.rokidsettingshub.R
 import com.example.rokidsettingshub.model.BluetoothFocusState
+import com.example.rokidsettingshub.model.DeviceInfoState
 import com.example.rokidsettingshub.model.BluetoothScreenState
 import com.example.rokidsettingshub.model.HubSection
 import com.example.rokidsettingshub.model.BluetoothFocusSection
@@ -21,8 +32,12 @@ import com.example.rokidsettingshub.ui.common.SectionCard
 @Composable
 fun HubScreen(
     currentSection: HubSection?,
+    selectedHubSection: HubSection,
     bluetoothState: BluetoothScreenState,
+    deviceInfoState: DeviceInfoState,
     bluetoothFocusState: BluetoothFocusState,
+    onMoveHubSelection: (Int) -> Unit,
+    onActivateHubSection: () -> Unit,
     onMoveBluetoothFocus: (Int, Long) -> Unit,
     onStartBluetoothScan: () -> Unit,
     onStopBluetoothScan: () -> Unit,
@@ -51,13 +66,20 @@ fun HubScreen(
             modifier = modifier,
         )
         HubSection.WiFi,
-        HubSection.Battery,
-        HubSection.DeviceInfo -> PlaceholderSectionScreen(
+        HubSection.Battery -> PlaceholderSectionScreen(
             section = currentSection,
             onBack = onBackFromSection,
             modifier = modifier,
         )
+        HubSection.DeviceInfo -> DeviceInfoScreen(
+            state = deviceInfoState,
+            onBack = onBackFromSection,
+            modifier = modifier,
+        )
         null -> HubHome(
+            selectedSection = selectedHubSection,
+            onMoveSelection = onMoveHubSelection,
+            onActivateSelection = onActivateHubSection,
             onSectionSelected = onSectionSelected,
             modifier = modifier,
         )
@@ -66,11 +88,45 @@ fun HubScreen(
 
 @Composable
 private fun HubHome(
+    selectedSection: HubSection,
+    onMoveSelection: (Int) -> Unit,
+    onActivateSelection: () -> Unit,
     onSectionSelected: (HubSection) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val focusRequester = remember { FocusRequester() }
+
+    LaunchedEffect(Unit) {
+        focusRequester.requestFocus()
+    }
+
     Column(
         modifier = modifier
+            .focusRequester(focusRequester)
+            .focusable()
+            .onPreviewKeyEvent { event ->
+                if (event.type != KeyEventType.KeyDown) {
+                    return@onPreviewKeyEvent false
+                }
+
+                when (event.key) {
+                    Key.DirectionDown -> {
+                        onMoveSelection(1)
+                        true
+                    }
+                    Key.DirectionUp -> {
+                        onMoveSelection(-1)
+                        true
+                    }
+                    Key.Enter,
+                    Key.NumPadEnter,
+                    Key.DirectionCenter -> {
+                        onActivateSelection()
+                        true
+                    }
+                    else -> false
+                }
+            }
             .fillMaxWidth()
             .padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -89,6 +145,7 @@ private fun HubHome(
                 title = stringResource(section.titleResId()),
                 supportingText = stringResource(sectionCopyFor(section).cardBodyResId),
                 enabled = true,
+                selected = selectedSection == section,
                 onClick = { onSectionSelected(section) },
             )
         }
