@@ -23,6 +23,7 @@ class BluetoothRepository(
     scanner: BluetoothScanner,
     private val deviceActions: BluetoothDeviceActions,
     private val loadMainPhone: () -> StoredMainPhone?,
+    private val confirmForget: (String) -> Boolean = { false },
 ) {
     private val _state = MutableStateFlow(
         BluetoothScreenState(
@@ -52,6 +53,10 @@ class BluetoothRepository(
 
     fun forget(address: String): Boolean {
         if (loadMainPhone()?.address == address) {
+            return false
+        }
+
+        if (!confirmForget(address)) {
             return false
         }
 
