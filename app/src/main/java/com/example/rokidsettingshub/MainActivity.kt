@@ -1,5 +1,7 @@
 package com.example.rokidsettingshub
 
+import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -14,6 +16,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        window.setBackgroundDrawable(ColorDrawable(Color.BLACK))
 
         setContent {
             val hubViewModel: HubViewModel = viewModel()

@@ -2,10 +2,9 @@ package com.example.rokidsettingshub.ui.hub
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -25,20 +24,23 @@ fun HubScreen(
     onBackFromSection: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Surface(modifier = modifier.fillMaxSize()) {
-        when (currentSection) {
-            HubSection.Bluetooth -> BluetoothScreen(
-                state = bluetoothState,
-                onBack = onBackFromSection,
-            )
-            HubSection.WiFi,
-            HubSection.Battery,
-            HubSection.DeviceInfo -> PlaceholderSectionScreen(
-                section = currentSection,
-                onBack = onBackFromSection,
-            )
-            null -> HubHome(onSectionSelected = onSectionSelected)
-        }
+    when (currentSection) {
+        HubSection.Bluetooth -> BluetoothScreen(
+            state = bluetoothState,
+            onBack = onBackFromSection,
+            modifier = modifier,
+        )
+        HubSection.WiFi,
+        HubSection.Battery,
+        HubSection.DeviceInfo -> PlaceholderSectionScreen(
+            section = currentSection,
+            onBack = onBackFromSection,
+            modifier = modifier,
+        )
+        null -> HubHome(
+            onSectionSelected = onSectionSelected,
+            modifier = modifier,
+        )
     }
 }
 
@@ -49,7 +51,7 @@ private fun HubHome(
 ) {
     Column(
         modifier = modifier
-            .fillMaxSize()
+            .fillMaxWidth()
             .padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
