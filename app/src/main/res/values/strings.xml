@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Rokid Settings Hub</string>
+    <string name="settings_hub_title">Settings Hub</string>
+    <string name="settings_hub_subtitle">Choose a section to continue.</string>
+    <string name="back">Back</string>
+
+    <string name="section_bluetooth_title">Bluetooth</string>
+    <string name="section_wifi_title">Wi-Fi</string>
+    <string name="section_battery_title">Battery</string>
+    <string name="section_device_info_title">Device Info</string>
+
+    <string name="section_bluetooth_card_body">Open Bluetooth settings.</string>
+    <string name="section_placeholder_card_body">Simple read-only placeholder for a later task.</string>
+
+    <string name="bluetooth_placeholder_body">Bluetooth details will be implemented in a later task.</string>
+    <string name="section_wifi_placeholder_body">Wi-Fi is coming soon. This screen is read-only for now.</string>
+    <string name="section_battery_placeholder_body">Battery details are coming soon. This screen is read-only for now.</string>
+    <string name="section_device_info_placeholder_body">Device info is coming soon. This screen is read-only for now.</string>
+</resources>

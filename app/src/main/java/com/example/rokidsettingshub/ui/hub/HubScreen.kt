@@ -14,6 +14,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import com.example.rokidsettingshub.R
 import com.example.rokidsettingshub.model.HubSection
 import com.example.rokidsettingshub.ui.common.SectionCard
 
@@ -21,14 +23,19 @@ import com.example.rokidsettingshub.ui.common.SectionCard
 fun HubScreen(
     currentSection: HubSection?,
     onSectionSelected: (HubSection) -> Unit,
-    onBackFromBluetooth: () -> Unit,
+    onBackFromSection: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Surface(modifier = modifier.fillMaxSize()) {
-        if (currentSection == HubSection.Bluetooth) {
-            BluetoothPlaceholderScreen(onBack = onBackFromBluetooth)
-        } else {
-            HubHome(onSectionSelected = onSectionSelected)
+        when (currentSection) {
+            HubSection.Bluetooth -> BluetoothPlaceholderScreen(onBack = onBackFromSection)
+            HubSection.WiFi,
+            HubSection.Battery,
+            HubSection.DeviceInfo -> PlaceholderSectionScreen(
+                section = currentSection,
+                onBack = onBackFromSection,
+            )
+            null -> HubHome(onSectionSelected = onSectionSelected)
         }
     }
 }
@@ -45,38 +52,22 @@ private fun HubHome(
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Text(
-            text = "Settings Hub",
+            text = stringResource(R.string.settings_hub_title),
             style = MaterialTheme.typography.headlineSmall,
         )
         Text(
-            text = "Choose a section to continue.",
+            text = stringResource(R.string.settings_hub_subtitle),
             style = MaterialTheme.typography.bodyMedium,
         )
 
-        SectionCard(
-            title = HubSection.Bluetooth.title,
-            supportingText = "Open Bluetooth settings.",
-            enabled = true,
-            onClick = { onSectionSelected(HubSection.Bluetooth) },
-        )
-        SectionCard(
-            title = HubSection.WiFi.title,
-            supportingText = "Placeholder for a later task.",
-            enabled = false,
-            onClick = {},
-        )
-        SectionCard(
-            title = HubSection.Battery.title,
-            supportingText = "Placeholder for a later task.",
-            enabled = false,
-            onClick = {},
-        )
-        SectionCard(
-            title = HubSection.DeviceInfo.title,
-            supportingText = "Placeholder for a later task.",
-            enabled = false,
-            onClick = {},
-        )
+        HubSection.entries.forEach { section ->
+            SectionCard(
+                title = stringResource(section.titleResId()),
+                supportingText = stringResource(section.cardSupportingTextResId()),
+                enabled = true,
+                onClick = { onSectionSelected(section) },
+            )
+        }
     }
 }
 
@@ -92,11 +83,11 @@ private fun BluetoothPlaceholderScreen(
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Text(
-            text = "Bluetooth",
+            text = stringResource(R.string.section_bluetooth_title),
             style = MaterialTheme.typography.headlineSmall,
         )
         Text(
-            text = "Bluetooth details will be implemented in a later task.",
+            text = stringResource(R.string.bluetooth_placeholder_body),
             style = MaterialTheme.typography.bodyMedium,
         )
         Spacer(modifier = Modifier.height(8.dp))
@@ -104,7 +95,21 @@ private fun BluetoothPlaceholderScreen(
             onClick = onBack,
             modifier = Modifier.fillMaxWidth(),
         ) {
-            Text("Back")
+            Text(stringResource(R.string.back))
         }
     }
+}
+
+private fun HubSection.titleResId(): Int = when (this) {
+    HubSection.Bluetooth -> R.string.section_bluetooth_title
+    HubSection.WiFi -> R.string.section_wifi_title
+    HubSection.Battery -> R.string.section_battery_title
+    HubSection.DeviceInfo -> R.string.section_device_info_title
+}
+
+private fun HubSection.cardSupportingTextResId(): Int = when (this) {
+    HubSection.Bluetooth -> R.string.section_bluetooth_card_body
+    HubSection.WiFi,
+    HubSection.Battery,
+    HubSection.DeviceInfo -> R.string.section_placeholder_card_body
 }

@@ -1,8 +1,8 @@
 package com.example.rokidsettingshub.model
 
-enum class HubSection(val title: String) {
-    Bluetooth("Bluetooth"),
-    WiFi("Wi-Fi"),
-    Battery("Battery"),
-    DeviceInfo("Device Info"),
+enum class HubSection {
+    Bluetooth,
+    WiFi,
+    Battery,
+    DeviceInfo,
 }

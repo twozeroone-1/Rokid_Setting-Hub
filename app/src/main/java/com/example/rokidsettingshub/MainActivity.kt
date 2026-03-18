@@ -22,7 +22,7 @@ class MainActivity : ComponentActivity() {
             HubScreen(
                 currentSection = currentSection,
                 onSectionSelected = hubViewModel::selectSection,
-                onBackFromBluetooth = hubViewModel::returnToHub,
+                onBackFromSection = hubViewModel::returnToHub,
             )
         }
     }
