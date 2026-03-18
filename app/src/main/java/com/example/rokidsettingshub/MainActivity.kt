@@ -18,9 +18,11 @@ class MainActivity : ComponentActivity() {
         setContent {
             val hubViewModel: HubViewModel = viewModel()
             val currentSection by hubViewModel.currentSection.collectAsState()
+            val bluetoothScreenState by hubViewModel.bluetoothScreenState.collectAsState()
 
             HubScreen(
                 currentSection = currentSection,
+                bluetoothState = bluetoothScreenState,
                 onSectionSelected = hubViewModel::selectSection,
                 onBackFromSection = hubViewModel::returnToHub,
             )
