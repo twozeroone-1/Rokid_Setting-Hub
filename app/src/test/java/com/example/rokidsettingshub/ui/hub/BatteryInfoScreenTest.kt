@@ -68,6 +68,16 @@ class BatteryInfoScreenTest {
     }
 
     @Test
+    fun backFromOverviewExitsBatteryScreen() {
+        assertEquals(null, backFromBatteryInfoPage(BatteryInfoPage.Overview))
+    }
+
+    @Test
+    fun backFromDetailsReturnsToBatteryOverview() {
+        assertEquals(BatteryInfoPage.Overview, backFromBatteryInfoPage(BatteryInfoPage.Details))
+    }
+
+    @Test
     fun batteryInfoVisualStyleUsesWhiteTextOnBlackBackground() {
         val style = batteryInfoVisualStyle()
 

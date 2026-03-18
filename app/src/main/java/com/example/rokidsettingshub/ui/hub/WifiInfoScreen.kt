@@ -14,6 +14,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -69,6 +70,11 @@ internal fun previousWifiInfoPage(page: WifiInfoPage): WifiInfoPage = when (page
     WifiInfoPage.Details -> WifiInfoPage.Overview
 }
 
+internal fun backFromWifiInfoPage(page: WifiInfoPage): WifiInfoPage? = when (page) {
+    WifiInfoPage.Overview -> null
+    WifiInfoPage.Details -> WifiInfoPage.Overview
+}
+
 internal fun wifiInfoEntries(
     state: WifiInfoState,
     page: WifiInfoPage,
@@ -90,6 +96,7 @@ internal fun wifiInfoEntries(
 fun WifiInfoScreen(
     state: WifiInfoState,
     onBack: () -> Unit,
+    registerHardwareBackHandler: ((() -> Boolean)?) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var pageIndex by rememberSaveable { mutableIntStateOf(0) }
@@ -102,10 +109,26 @@ fun WifiInfoScreen(
     }
 
     BackHandler {
-        if (currentPage == WifiInfoPage.Details) {
-            pageIndex = WifiInfoPage.Overview.ordinal
-        } else {
+        val backTarget = backFromWifiInfoPage(currentPage)
+        if (backTarget == null) {
             onBack()
+        } else {
+            pageIndex = backTarget.ordinal
+        }
+    }
+
+    DisposableEffect(currentPage, onBack, registerHardwareBackHandler) {
+        registerHardwareBackHandler {
+            val backTarget = backFromWifiInfoPage(currentPage)
+            if (backTarget == null) {
+                onBack()
+            } else {
+                pageIndex = backTarget.ordinal
+            }
+            true
+        }
+        onDispose {
+            registerHardwareBackHandler(null)
         }
     }
 
@@ -119,6 +142,7 @@ fun WifiInfoScreen(
                 }
 
                 when (event.key) {
+                    Key.DirectionRight,
                     Key.DirectionDown,
                     Key.Enter,
                     Key.NumPadEnter,
@@ -140,6 +164,17 @@ fun WifiInfoScreen(
                         } else {
                             false
                         }
+                    }
+
+                    Key.DirectionLeft,
+                    Key.Back -> {
+                        val backTarget = backFromWifiInfoPage(currentPage)
+                        if (backTarget == null) {
+                            onBack()
+                        } else {
+                            pageIndex = backTarget.ordinal
+                        }
+                        true
                     }
 
                     else -> false

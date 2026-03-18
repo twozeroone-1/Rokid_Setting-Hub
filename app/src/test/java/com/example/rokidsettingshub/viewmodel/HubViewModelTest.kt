@@ -56,6 +56,26 @@ class HubViewModelTest {
     }
 
     @Test
+    fun movingHubSelectionStopsAtFirstSection() {
+        val viewModel = HubViewModel()
+
+        viewModel.moveHubSelection(direction = -1)
+
+        assertEquals(HubSection.Bluetooth, viewModel.selectedHubSection.value)
+    }
+
+    @Test
+    fun movingHubSelectionStopsAtLastSection() {
+        val viewModel = HubViewModel()
+
+        repeat(6) {
+            viewModel.moveHubSelection(direction = 1)
+        }
+
+        assertEquals(HubSection.DeviceInfo, viewModel.selectedHubSection.value)
+    }
+
+    @Test
     fun activatingSelectedHubSectionOpensIt() {
         val viewModel = HubViewModel()
 

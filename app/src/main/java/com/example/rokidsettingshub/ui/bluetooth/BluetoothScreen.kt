@@ -13,6 +13,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -47,6 +48,7 @@ fun BluetoothScreen(
     onActivateSelectedSection: () -> Unit,
     onBackFromDetail: () -> Unit,
     onBack: () -> Unit,
+    registerHardwareBackHandler: ((() -> Boolean)?) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     BackHandler {
@@ -54,6 +56,25 @@ fun BluetoothScreen(
             onBackFromDetail()
         } else {
             onBack()
+        }
+    }
+
+    DisposableEffect(
+        navigationState.detailSection,
+        onBack,
+        onBackFromDetail,
+        registerHardwareBackHandler,
+    ) {
+        registerHardwareBackHandler {
+            if (navigationState.detailSection != null) {
+                onBackFromDetail()
+            } else {
+                onBack()
+            }
+            true
+        }
+        onDispose {
+            registerHardwareBackHandler(null)
         }
     }
 
@@ -108,6 +129,14 @@ private fun BluetoothOverviewScreen(
                 }
 
                 when (event.key) {
+                    Key.Back -> {
+                        onBack()
+                        true
+                    }
+                    Key.DirectionLeft -> {
+                        onBack()
+                        true
+                    }
                     Key.DirectionDown -> {
                         onMoveFocus(1, SystemClock.uptimeMillis())
                         true
@@ -174,9 +203,32 @@ private fun BluetoothDetailScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val focusRequester = remember { FocusRequester() }
+
+    LaunchedEffect(section) {
+        focusRequester.requestFocus()
+    }
+
     Column(
         modifier = modifier
             .fillMaxWidth()
+            .focusRequester(focusRequester)
+            .focusable()
+            .onPreviewKeyEvent { event ->
+                if (event.type != KeyEventType.KeyDown) {
+                    return@onPreviewKeyEvent false
+                }
+
+                when (event.key) {
+                    Key.DirectionLeft,
+                    Key.Back -> {
+                        onBack()
+                        true
+                    }
+
+                    else -> false
+                }
+            }
             .padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {

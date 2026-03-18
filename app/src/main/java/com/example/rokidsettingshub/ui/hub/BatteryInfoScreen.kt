@@ -14,6 +14,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -69,6 +70,11 @@ internal fun previousBatteryInfoPage(page: BatteryInfoPage): BatteryInfoPage = w
     BatteryInfoPage.Details -> BatteryInfoPage.Overview
 }
 
+internal fun backFromBatteryInfoPage(page: BatteryInfoPage): BatteryInfoPage? = when (page) {
+    BatteryInfoPage.Overview -> null
+    BatteryInfoPage.Details -> BatteryInfoPage.Overview
+}
+
 internal fun batteryInfoEntries(
     state: BatteryInfoState,
     page: BatteryInfoPage,
@@ -90,6 +96,7 @@ internal fun batteryInfoEntries(
 fun BatteryInfoScreen(
     state: BatteryInfoState,
     onBack: () -> Unit,
+    registerHardwareBackHandler: ((() -> Boolean)?) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var pageIndex by rememberSaveable { mutableIntStateOf(0) }
@@ -102,10 +109,26 @@ fun BatteryInfoScreen(
     }
 
     BackHandler {
-        if (currentPage == BatteryInfoPage.Details) {
-            pageIndex = BatteryInfoPage.Overview.ordinal
-        } else {
+        val backTarget = backFromBatteryInfoPage(currentPage)
+        if (backTarget == null) {
             onBack()
+        } else {
+            pageIndex = backTarget.ordinal
+        }
+    }
+
+    DisposableEffect(currentPage, onBack, registerHardwareBackHandler) {
+        registerHardwareBackHandler {
+            val backTarget = backFromBatteryInfoPage(currentPage)
+            if (backTarget == null) {
+                onBack()
+            } else {
+                pageIndex = backTarget.ordinal
+            }
+            true
+        }
+        onDispose {
+            registerHardwareBackHandler(null)
         }
     }
 
@@ -119,6 +142,7 @@ fun BatteryInfoScreen(
                 }
 
                 when (event.key) {
+                    Key.DirectionRight,
                     Key.DirectionDown,
                     Key.Enter,
                     Key.NumPadEnter,
@@ -140,6 +164,17 @@ fun BatteryInfoScreen(
                         } else {
                             false
                         }
+                    }
+
+                    Key.DirectionLeft,
+                    Key.Back -> {
+                        val backTarget = backFromBatteryInfoPage(currentPage)
+                        if (backTarget == null) {
+                            onBack()
+                        } else {
+                            pageIndex = backTarget.ordinal
+                        }
+                        true
                     }
 
                     else -> false

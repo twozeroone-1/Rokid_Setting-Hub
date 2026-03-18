@@ -65,6 +65,16 @@ class DeviceInfoScreenTest {
     }
 
     @Test
+    fun backFromOverviewExitsDeviceInfoScreen() {
+        assertEquals(null, backFromDeviceInfoPage(DeviceInfoPage.Overview))
+    }
+
+    @Test
+    fun backFromStorageReturnsToOverview() {
+        assertEquals(DeviceInfoPage.Overview, backFromDeviceInfoPage(DeviceInfoPage.Storage))
+    }
+
+    @Test
     fun deviceInfoVisualStyleUsesWhiteTextOnBlackBackground() {
         val style = deviceInfoVisualStyle()
 

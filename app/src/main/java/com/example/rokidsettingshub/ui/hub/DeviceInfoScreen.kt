@@ -14,6 +14,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -69,6 +70,11 @@ internal fun previousDeviceInfoPage(page: DeviceInfoPage): DeviceInfoPage = when
     DeviceInfoPage.Storage -> DeviceInfoPage.Overview
 }
 
+internal fun backFromDeviceInfoPage(page: DeviceInfoPage): DeviceInfoPage? = when (page) {
+    DeviceInfoPage.Overview -> null
+    DeviceInfoPage.Storage -> DeviceInfoPage.Overview
+}
+
 internal fun deviceInfoEntries(
     state: DeviceInfoState,
     page: DeviceInfoPage,
@@ -89,6 +95,7 @@ internal fun deviceInfoEntries(
 fun DeviceInfoScreen(
     state: DeviceInfoState,
     onBack: () -> Unit,
+    registerHardwareBackHandler: ((() -> Boolean)?) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var pageIndex by rememberSaveable { mutableIntStateOf(0) }
@@ -101,10 +108,26 @@ fun DeviceInfoScreen(
     }
 
     BackHandler {
-        if (currentPage == DeviceInfoPage.Storage) {
-            pageIndex = DeviceInfoPage.Overview.ordinal
-        } else {
+        val backTarget = backFromDeviceInfoPage(currentPage)
+        if (backTarget == null) {
             onBack()
+        } else {
+            pageIndex = backTarget.ordinal
+        }
+    }
+
+    DisposableEffect(currentPage, onBack, registerHardwareBackHandler) {
+        registerHardwareBackHandler {
+            val backTarget = backFromDeviceInfoPage(currentPage)
+            if (backTarget == null) {
+                onBack()
+            } else {
+                pageIndex = backTarget.ordinal
+            }
+            true
+        }
+        onDispose {
+            registerHardwareBackHandler(null)
         }
     }
 
@@ -118,6 +141,7 @@ fun DeviceInfoScreen(
                 }
 
                 when (event.key) {
+                    Key.DirectionRight,
                     Key.DirectionDown,
                     Key.Enter,
                     Key.NumPadEnter,
@@ -139,6 +163,17 @@ fun DeviceInfoScreen(
                         } else {
                             false
                         }
+                    }
+
+                    Key.DirectionLeft,
+                    Key.Back -> {
+                        val backTarget = backFromDeviceInfoPage(currentPage)
+                        if (backTarget == null) {
+                            onBack()
+                        } else {
+                            pageIndex = backTarget.ordinal
+                        }
+                        true
                     }
 
                     else -> false

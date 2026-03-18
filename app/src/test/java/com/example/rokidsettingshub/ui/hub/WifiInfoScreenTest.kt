@@ -68,6 +68,16 @@ class WifiInfoScreenTest {
     }
 
     @Test
+    fun backFromOverviewExitsWifiScreen() {
+        assertEquals(null, backFromWifiInfoPage(WifiInfoPage.Overview))
+    }
+
+    @Test
+    fun backFromDetailsReturnsToWifiOverview() {
+        assertEquals(WifiInfoPage.Overview, backFromWifiInfoPage(WifiInfoPage.Details))
+    }
+
+    @Test
     fun wifiInfoVisualStyleUsesWhiteTextOnBlackBackground() {
         val style = wifiInfoVisualStyle()
 

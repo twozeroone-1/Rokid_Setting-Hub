@@ -3,6 +3,7 @@ package com.example.rokidsettingshub.ui.common
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.border
@@ -56,6 +57,7 @@ fun SectionCard(
                 },
                 shape = RoundedCornerShape(12.dp),
             )
+            .defaultMinSize(minHeight = 220.dp)
             .fillMaxWidth()
             .clickable(enabled = enabled, onClick = onClick),
         colors = CardDefaults.cardColors(

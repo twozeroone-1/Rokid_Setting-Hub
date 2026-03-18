@@ -3,17 +3,21 @@ package com.example.rokidsettingshub.ui.hub
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.SideEffect
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -35,8 +39,8 @@ import com.example.rokidsettingshub.model.WifiInfoState
 import com.example.rokidsettingshub.ui.bluetooth.BluetoothScreen
 import com.example.rokidsettingshub.ui.common.SectionCard
 
-internal fun hubHomeScrollTarget(selectedSection: HubSection): Int =
-    (HubSection.entries.indexOf(selectedSection) - 1).coerceAtLeast(0)
+internal fun hubHomePageTarget(selectedSection: HubSection): Int =
+    HubSection.entries.indexOf(selectedSection).coerceAtLeast(0)
 
 @Composable
 fun HubScreen(
@@ -59,6 +63,7 @@ fun HubScreen(
     onBackFromBluetoothDetail: () -> Unit,
     onSectionSelected: (HubSection) -> Unit,
     onBackFromSection: () -> Unit,
+    onRegisterHardwareBackHandler: ((() -> Boolean)?) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     when (currentSection) {
@@ -74,21 +79,25 @@ fun HubScreen(
             onActivateSelectedSection = onActivateBluetoothSection,
             onBackFromDetail = onBackFromBluetoothDetail,
             onBack = onBackFromSection,
+            registerHardwareBackHandler = onRegisterHardwareBackHandler,
             modifier = modifier,
         )
         HubSection.WiFi -> WifiInfoScreen(
             state = wifiInfoState,
             onBack = onBackFromSection,
+            registerHardwareBackHandler = onRegisterHardwareBackHandler,
             modifier = modifier,
         )
         HubSection.Battery -> BatteryInfoScreen(
             state = batteryInfoState,
             onBack = onBackFromSection,
+            registerHardwareBackHandler = onRegisterHardwareBackHandler,
             modifier = modifier,
         )
         HubSection.DeviceInfo -> DeviceInfoScreen(
             state = deviceInfoState,
             onBack = onBackFromSection,
+            registerHardwareBackHandler = onRegisterHardwareBackHandler,
             modifier = modifier,
         )
         null -> HubHome(
@@ -96,6 +105,7 @@ fun HubScreen(
             onMoveSelection = onMoveHubSelection,
             onActivateSelection = onActivateHubSection,
             onSectionSelected = onSectionSelected,
+            onRegisterHardwareBackHandler = onRegisterHardwareBackHandler,
             modifier = modifier,
         )
     }
@@ -107,17 +117,22 @@ private fun HubHome(
     onMoveSelection: (Int) -> Unit,
     onActivateSelection: () -> Unit,
     onSectionSelected: (HubSection) -> Unit,
+    onRegisterHardwareBackHandler: ((() -> Boolean)?) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val focusRequester = remember { FocusRequester() }
     val listState = rememberLazyListState()
+
+    SideEffect {
+        onRegisterHardwareBackHandler(null)
+    }
 
     LaunchedEffect(Unit) {
         focusRequester.requestFocus()
     }
 
     LaunchedEffect(selectedSection) {
-        listState.animateScrollToItem(hubHomeScrollTarget(selectedSection))
+        listState.animateScrollToItem(hubHomePageTarget(selectedSection))
     }
 
     Column(
@@ -130,10 +145,12 @@ private fun HubHome(
                 }
 
                 when (event.key) {
+                    Key.DirectionRight,
                     Key.DirectionDown -> {
                         onMoveSelection(1)
                         true
                     }
+                    Key.DirectionLeft,
                     Key.DirectionUp -> {
                         onMoveSelection(-1)
                         true
@@ -161,21 +178,43 @@ private fun HubHome(
             style = MaterialTheme.typography.bodyMedium,
         )
 
-        LazyColumn(
-            state = listState,
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .fillMaxHeight(),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            contentAlignment = Alignment.Center,
         ) {
-            items(HubSection.entries, key = { it.name }) { section ->
-                SectionCard(
-                    title = stringResource(section.titleResId()),
-                    supportingText = stringResource(sectionCopyFor(section).cardBodyResId),
-                    enabled = true,
-                    selected = selectedSection == section,
-                    onClick = { onSectionSelected(section) },
-                )
+            LazyRow(
+                state = listState,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(260.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                userScrollEnabled = false,
+            ) {
+                itemsIndexed(HubSection.entries, key = { _, section -> section.name }) { index, section ->
+                    val horizontalPadding = if (index == 0 || index == HubSection.entries.lastIndex) {
+                        40.dp
+                    } else {
+                        0.dp
+                    }
+
+                    Box(
+                        modifier = Modifier
+                            .fillParentMaxWidth()
+                            .padding(horizontal = horizontalPadding),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        SectionCard(
+                            title = stringResource(section.titleResId()),
+                            supportingText = stringResource(sectionCopyFor(section).cardBodyResId),
+                            enabled = true,
+                            selected = selectedSection == section,
+                            onClick = { onSectionSelected(section) },
+                        )
+                    }
+                }
             }
         }
     }

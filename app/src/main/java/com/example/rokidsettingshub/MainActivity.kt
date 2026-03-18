@@ -3,6 +3,7 @@ package com.example.rokidsettingshub
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
+import android.view.KeyEvent
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -20,6 +21,8 @@ import com.example.rokidsettingshub.ui.hub.HubScreen
 import com.example.rokidsettingshub.viewmodel.HubViewModel
 
 class MainActivity : ComponentActivity() {
+    private var hardwareBackHandler: (() -> Boolean)? = null
+
     private val bluetoothRepository by lazy {
         createBluetoothRepository(
             context = applicationContext,
@@ -87,8 +90,19 @@ class MainActivity : ComponentActivity() {
                 onBackFromBluetoothDetail = hubViewModel::handleBluetoothBack,
                 onSectionSelected = hubViewModel::selectSection,
                 onBackFromSection = hubViewModel::returnToHub,
+                onRegisterHardwareBackHandler = { handler -> hardwareBackHandler = handler },
             )
         }
+    }
+
+    override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        if (event.keyCode == KeyEvent.KEYCODE_BACK && event.action == KeyEvent.ACTION_UP) {
+            if (hardwareBackHandler?.invoke() == true) {
+                return true
+            }
+        }
+
+        return super.dispatchKeyEvent(event)
     }
 }
 
