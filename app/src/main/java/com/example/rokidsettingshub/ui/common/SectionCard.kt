@@ -13,7 +13,26 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+
+internal data class SectionCardVisualStyle(
+    val containerColor: Color,
+    val borderWidth: Dp,
+    val titleColor: Color,
+    val supportingTextColor: Color,
+    val isSelected: Boolean,
+)
+
+internal fun sectionCardVisualStyle(selected: Boolean): SectionCardVisualStyle =
+    SectionCardVisualStyle(
+        containerColor = Color.Transparent,
+        borderWidth = if (selected) 3.dp else 1.dp,
+        titleColor = Color.White,
+        supportingTextColor = Color.White.copy(alpha = 0.82f),
+        isSelected = selected,
+    )
 
 @Composable
 fun SectionCard(
@@ -24,11 +43,13 @@ fun SectionCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val visualStyle = sectionCardVisualStyle(selected = selected)
+
     Card(
         modifier = modifier
             .border(
-                width = if (selected) 2.dp else 1.dp,
-                color = if (selected) {
+                width = visualStyle.borderWidth,
+                color = if (visualStyle.isSelected) {
                     MaterialTheme.colorScheme.primary
                 } else {
                     MaterialTheme.colorScheme.outline.copy(alpha = 0.35f)
@@ -38,11 +59,7 @@ fun SectionCard(
             .fillMaxWidth()
             .clickable(enabled = enabled, onClick = onClick),
         colors = CardDefaults.cardColors(
-            containerColor = if (selected) {
-                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.65f)
-            } else {
-                MaterialTheme.colorScheme.surface
-            },
+            containerColor = visualStyle.containerColor,
         ),
     ) {
         Column(
@@ -52,10 +69,12 @@ fun SectionCard(
             Text(
                 text = title,
                 style = MaterialTheme.typography.titleMedium,
+                color = visualStyle.titleColor,
             )
             Text(
                 text = supportingText,
                 style = MaterialTheme.typography.bodyMedium,
+                color = visualStyle.supportingTextColor,
             )
         }
     }
