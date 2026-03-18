@@ -3,8 +3,12 @@ package com.example.rokidsettingshub.ui.hub
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -28,6 +32,9 @@ import com.example.rokidsettingshub.model.HubSection
 import com.example.rokidsettingshub.model.BluetoothFocusSection
 import com.example.rokidsettingshub.ui.bluetooth.BluetoothScreen
 import com.example.rokidsettingshub.ui.common.SectionCard
+
+internal fun hubHomeScrollTarget(selectedSection: HubSection): Int =
+    (HubSection.entries.indexOf(selectedSection) - 1).coerceAtLeast(0)
 
 @Composable
 fun HubScreen(
@@ -95,9 +102,14 @@ private fun HubHome(
     modifier: Modifier = Modifier,
 ) {
     val focusRequester = remember { FocusRequester() }
+    val listState = rememberLazyListState()
 
     LaunchedEffect(Unit) {
         focusRequester.requestFocus()
+    }
+
+    LaunchedEffect(selectedSection) {
+        listState.animateScrollToItem(hubHomeScrollTarget(selectedSection))
     }
 
     Column(
@@ -128,6 +140,7 @@ private fun HubHome(
                 }
             }
             .fillMaxWidth()
+            .fillMaxHeight()
             .padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
@@ -140,14 +153,22 @@ private fun HubHome(
             style = MaterialTheme.typography.bodyMedium,
         )
 
-        HubSection.entries.forEach { section ->
-            SectionCard(
-                title = stringResource(section.titleResId()),
-                supportingText = stringResource(sectionCopyFor(section).cardBodyResId),
-                enabled = true,
-                selected = selectedSection == section,
-                onClick = { onSectionSelected(section) },
-            )
+        LazyColumn(
+            state = listState,
+            modifier = Modifier
+                .fillMaxWidth()
+                .fillMaxHeight(),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            items(HubSection.entries, key = { it.name }) { section ->
+                SectionCard(
+                    title = stringResource(section.titleResId()),
+                    supportingText = stringResource(sectionCopyFor(section).cardBodyResId),
+                    enabled = true,
+                    selected = selectedSection == section,
+                    onClick = { onSectionSelected(section) },
+                )
+            }
         }
     }
 }
