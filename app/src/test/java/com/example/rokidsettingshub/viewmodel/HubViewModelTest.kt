@@ -6,6 +6,7 @@ import com.example.rokidsettingshub.data.bluetooth.BluetoothScanner
 import com.example.rokidsettingshub.data.bluetooth.BondedDeviceSource
 import com.example.rokidsettingshub.data.batteryinfo.BatteryInfoSource
 import com.example.rokidsettingshub.data.deviceinfo.DeviceInfoSource
+import com.example.rokidsettingshub.data.wifiinfo.WifiInfoSource
 import com.example.rokidsettingshub.model.BatteryInfoSnapshot
 import com.example.rokidsettingshub.model.BatteryInfoState
 import com.example.rokidsettingshub.model.BluetoothFocusSection
@@ -16,6 +17,8 @@ import com.example.rokidsettingshub.model.DeviceConnectionState
 import com.example.rokidsettingshub.model.DeviceType
 import com.example.rokidsettingshub.model.HubSection
 import com.example.rokidsettingshub.model.ManagedDevice
+import com.example.rokidsettingshub.model.WifiInfoSnapshot
+import com.example.rokidsettingshub.model.WifiInfoState
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -96,6 +99,25 @@ class HubViewModelTest {
         )
 
         assertEquals(expected, viewModel.batteryInfoState.value)
+    }
+
+    @Test
+    fun wifiInfoStateIsLoadedFromSource() {
+        val expected = WifiInfoState.fromSnapshot(
+            WifiInfoSnapshot(
+                hardwarePresent = true,
+                enabled = false,
+                connected = false,
+                ssid = null,
+                ipAddress = null,
+                interfaceName = "wlan0",
+            ),
+        )
+        val viewModel = HubViewModel(
+            wifiInfoSource = FakeWifiInfoSource(expected),
+        )
+
+        assertEquals(expected, viewModel.wifiInfoState.value)
     }
 
     @Test
@@ -328,5 +350,11 @@ class HubViewModelTest {
         private val state: BatteryInfoState,
     ) : BatteryInfoSource {
         override fun load(): BatteryInfoState = state
+    }
+
+    private class FakeWifiInfoSource(
+        private val state: WifiInfoState,
+    ) : WifiInfoSource {
+        override fun load(): WifiInfoState = state
     }
 }

@@ -31,6 +31,7 @@ import com.example.rokidsettingshub.model.DeviceInfoState
 import com.example.rokidsettingshub.model.BluetoothScreenState
 import com.example.rokidsettingshub.model.HubSection
 import com.example.rokidsettingshub.model.BluetoothFocusSection
+import com.example.rokidsettingshub.model.WifiInfoState
 import com.example.rokidsettingshub.ui.bluetooth.BluetoothScreen
 import com.example.rokidsettingshub.ui.common.SectionCard
 
@@ -42,6 +43,7 @@ fun HubScreen(
     currentSection: HubSection?,
     selectedHubSection: HubSection,
     bluetoothState: BluetoothScreenState,
+    wifiInfoState: WifiInfoState,
     batteryInfoState: BatteryInfoState,
     deviceInfoState: DeviceInfoState,
     bluetoothFocusState: BluetoothFocusState,
@@ -74,8 +76,8 @@ fun HubScreen(
             onBack = onBackFromSection,
             modifier = modifier,
         )
-        HubSection.WiFi -> PlaceholderSectionScreen(
-            section = currentSection,
+        HubSection.WiFi -> WifiInfoScreen(
+            state = wifiInfoState,
             onBack = onBackFromSection,
             modifier = modifier,
         )

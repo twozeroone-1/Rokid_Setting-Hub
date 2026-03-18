@@ -15,6 +15,7 @@ import com.example.rokidsettingshub.data.bluetooth.createBluetoothRepository
 import com.example.rokidsettingshub.data.batteryinfo.AndroidBatteryInfoSource
 import com.example.rokidsettingshub.data.deviceinfo.AndroidDeviceInfoSource
 import com.example.rokidsettingshub.data.storage.MainPhoneStore
+import com.example.rokidsettingshub.data.wifiinfo.AndroidWifiInfoSource
 import com.example.rokidsettingshub.ui.hub.HubScreen
 import com.example.rokidsettingshub.viewmodel.HubViewModel
 
@@ -29,6 +30,9 @@ class MainActivity : ComponentActivity() {
     }
 
     private val hubViewModelFactory by lazy {
+        val wifiInfoSource = AndroidWifiInfoSource(
+            context = applicationContext,
+        )
         val batteryInfoSource = AndroidBatteryInfoSource(
             context = applicationContext,
         )
@@ -40,6 +44,7 @@ class MainActivity : ComponentActivity() {
                 @Suppress("UNCHECKED_CAST")
                 return HubViewModel(
                     bluetoothRepository = bluetoothRepository,
+                    wifiInfoSource = wifiInfoSource,
                     batteryInfoSource = batteryInfoSource,
                     deviceInfoSource = deviceInfoSource,
                 ) as T
@@ -57,6 +62,7 @@ class MainActivity : ComponentActivity() {
             val currentSection by hubViewModel.currentSection.collectAsState()
             val selectedHubSection by hubViewModel.selectedHubSection.collectAsState()
             val bluetoothScreenState by hubViewModel.bluetoothScreenState.collectAsState()
+            val wifiInfoState by hubViewModel.wifiInfoState.collectAsState()
             val batteryInfoState by hubViewModel.batteryInfoState.collectAsState()
             val deviceInfoState by hubViewModel.deviceInfoState.collectAsState()
             val bluetoothFocusState by hubViewModel.bluetoothFocusState.collectAsState()
@@ -65,6 +71,7 @@ class MainActivity : ComponentActivity() {
                 currentSection = currentSection,
                 selectedHubSection = selectedHubSection,
                 bluetoothState = bluetoothScreenState,
+                wifiInfoState = wifiInfoState,
                 batteryInfoState = batteryInfoState,
                 deviceInfoState = deviceInfoState,
                 bluetoothFocusState = bluetoothFocusState,

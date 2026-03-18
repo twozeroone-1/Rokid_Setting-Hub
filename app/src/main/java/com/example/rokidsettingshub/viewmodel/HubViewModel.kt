@@ -9,6 +9,8 @@ import com.example.rokidsettingshub.data.batteryinfo.BatteryInfoSource
 import com.example.rokidsettingshub.data.batteryinfo.UnavailableBatteryInfoSource
 import com.example.rokidsettingshub.data.deviceinfo.DeviceInfoSource
 import com.example.rokidsettingshub.data.deviceinfo.UnavailableDeviceInfoSource
+import com.example.rokidsettingshub.data.wifiinfo.UnavailableWifiInfoSource
+import com.example.rokidsettingshub.data.wifiinfo.WifiInfoSource
 import com.example.rokidsettingshub.model.BatteryInfoState
 import com.example.rokidsettingshub.model.BluetoothFocusSection
 import com.example.rokidsettingshub.model.BluetoothFocusState
@@ -16,6 +18,7 @@ import com.example.rokidsettingshub.model.BluetoothScreenState
 import com.example.rokidsettingshub.model.DeviceInfoState
 import com.example.rokidsettingshub.model.HubSection
 import com.example.rokidsettingshub.model.ManagedDevice
+import com.example.rokidsettingshub.model.WifiInfoState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -27,6 +30,7 @@ class HubViewModel(
         deviceActions = NoOpBluetoothDeviceActions,
         loadMainPhone = { null },
     ),
+    wifiInfoSource: WifiInfoSource = UnavailableWifiInfoSource,
     batteryInfoSource: BatteryInfoSource = UnavailableBatteryInfoSource,
     deviceInfoSource: DeviceInfoSource = UnavailableDeviceInfoSource,
 ) : ViewModel() {
@@ -34,6 +38,8 @@ class HubViewModel(
     val currentSection: StateFlow<HubSection?> = _currentSection.asStateFlow()
     private val _selectedHubSection = MutableStateFlow(HubSection.Bluetooth)
     val selectedHubSection: StateFlow<HubSection> = _selectedHubSection.asStateFlow()
+    private val _wifiInfoState = MutableStateFlow(wifiInfoSource.load())
+    val wifiInfoState: StateFlow<WifiInfoState> = _wifiInfoState.asStateFlow()
     private val _batteryInfoState = MutableStateFlow(batteryInfoSource.load())
     val batteryInfoState: StateFlow<BatteryInfoState> = _batteryInfoState.asStateFlow()
     private val _deviceInfoState = MutableStateFlow(deviceInfoSource.load())
