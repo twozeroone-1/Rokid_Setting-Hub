@@ -78,6 +78,12 @@ class WifiInfoScreenTest {
     }
 
     @Test
+    fun wifiSettingsLaunchIsOnlyAvailableOnDetailsPage() {
+        assertEquals(false, canLaunchWifiSettings(WifiInfoPage.Overview))
+        assertEquals(true, canLaunchWifiSettings(WifiInfoPage.Details))
+    }
+
+    @Test
     fun wifiInfoVisualStyleUsesWhiteTextOnBlackBackground() {
         val style = wifiInfoVisualStyle()
 

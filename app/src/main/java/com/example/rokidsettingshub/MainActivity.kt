@@ -2,7 +2,9 @@ package com.example.rokidsettingshub
 
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
+import android.content.Intent
 import android.os.Bundle
+import android.provider.Settings
 import android.view.KeyEvent
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -90,6 +92,7 @@ class MainActivity : ComponentActivity() {
                 onBackFromBluetoothDetail = hubViewModel::handleBluetoothBack,
                 onSectionSelected = hubViewModel::selectSection,
                 onBackFromSection = hubViewModel::returnToHub,
+                onOpenSystemWifiSettings = ::openSystemWifiSettings,
                 onRegisterHardwareBackHandler = { handler -> hardwareBackHandler = handler },
             )
         }
@@ -103,6 +106,20 @@ class MainActivity : ComponentActivity() {
         }
 
         return super.dispatchKeyEvent(event)
+    }
+
+    private fun openSystemWifiSettings() {
+        val wifiIntent = Intent(Settings.ACTION_WIFI_SETTINGS)
+        val fallbackIntent = Intent(Settings.ACTION_SETTINGS)
+        val targetIntent = if (wifiIntent.resolveActivity(packageManager) != null) {
+            wifiIntent
+        } else {
+            fallbackIntent
+        }
+
+        runCatching {
+            startActivity(targetIntent)
+        }
     }
 }
 

@@ -75,6 +75,8 @@ internal fun backFromWifiInfoPage(page: WifiInfoPage): WifiInfoPage? = when (pag
     WifiInfoPage.Details -> WifiInfoPage.Overview
 }
 
+internal fun canLaunchWifiSettings(page: WifiInfoPage): Boolean = page == WifiInfoPage.Details
+
 internal fun wifiInfoEntries(
     state: WifiInfoState,
     page: WifiInfoPage,
@@ -96,6 +98,7 @@ internal fun wifiInfoEntries(
 fun WifiInfoScreen(
     state: WifiInfoState,
     onBack: () -> Unit,
+    onOpenSystemWifiSettings: () -> Unit,
     registerHardwareBackHandler: ((() -> Boolean)?) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -142,11 +145,16 @@ fun WifiInfoScreen(
                 }
 
                 when (event.key) {
-                    Key.DirectionRight,
                     Key.DirectionDown,
                     Key.Enter,
                     Key.NumPadEnter,
-                    Key.DirectionCenter -> {
+                    Key.DirectionCenter,
+                    Key.DirectionRight -> {
+                        if (canLaunchWifiSettings(currentPage)) {
+                            onOpenSystemWifiSettings()
+                            return@onPreviewKeyEvent true
+                        }
+
                         val nextPage = nextWifiInfoPage(currentPage)
                         if (nextPage != currentPage) {
                             pageIndex = nextPage.ordinal
@@ -227,6 +235,12 @@ fun WifiInfoScreen(
 
         Spacer(modifier = Modifier.height(8.dp))
         if (currentPage == WifiInfoPage.Details) {
+            OutlinedButton(
+                onClick = onOpenSystemWifiSettings,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(text = stringResource(R.string.section_wifi_open_system_settings))
+            }
             OutlinedButton(
                 onClick = onBack,
                 modifier = Modifier
