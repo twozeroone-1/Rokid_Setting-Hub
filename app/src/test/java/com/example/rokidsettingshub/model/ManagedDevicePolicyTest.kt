@@ -1,5 +1,6 @@
 package com.example.rokidsettingshub.model
 
+import org.junit.Assert.assertThrows
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -92,5 +93,56 @@ class ManagedDevicePolicyTest {
 
         assertTrue(pairedPhone.canBeMainPhone)
         assertFalse(connectedAudio.canBeMainPhone)
+    }
+
+    @Test
+    fun assignMainPhoneAcceptsConnectedPhone() {
+        val connectedPhone = ManagedDevice(
+            address = "AA:BB:CC:DD:EE:08",
+            name = "Connected Phone",
+            deviceType = DeviceType.Phone,
+            connectionState = DeviceConnectionState.Connected,
+        )
+
+        val updatedDevices = ManagedDevice.assignMainPhone(
+            devices = listOf(connectedPhone),
+            address = connectedPhone.address,
+        )
+
+        assertTrue(updatedDevices.single().isMainPhone)
+    }
+
+    @Test
+    fun assignMainPhoneRejectsAvailablePhone() {
+        val availablePhone = ManagedDevice(
+            address = "AA:BB:CC:DD:EE:09",
+            name = "Available Phone",
+            deviceType = DeviceType.Phone,
+            connectionState = DeviceConnectionState.Available,
+        )
+
+        assertThrows(IllegalArgumentException::class.java) {
+            ManagedDevice.assignMainPhone(
+                devices = listOf(availablePhone),
+                address = availablePhone.address,
+            )
+        }
+    }
+
+    @Test
+    fun assignMainPhoneRejectsNonPhoneDevice() {
+        val pairedAudio = ManagedDevice(
+            address = "AA:BB:CC:DD:EE:10",
+            name = "Paired Audio",
+            deviceType = DeviceType.Audio,
+            connectionState = DeviceConnectionState.Paired,
+        )
+
+        assertThrows(IllegalArgumentException::class.java) {
+            ManagedDevice.assignMainPhone(
+                devices = listOf(pairedAudio),
+                address = pairedAudio.address,
+            )
+        }
     }
 }
