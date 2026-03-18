@@ -4,7 +4,10 @@ import com.example.rokidsettingshub.data.bluetooth.BluetoothDeviceActions
 import com.example.rokidsettingshub.data.bluetooth.BluetoothRepository
 import com.example.rokidsettingshub.data.bluetooth.BluetoothScanner
 import com.example.rokidsettingshub.data.bluetooth.BondedDeviceSource
+import com.example.rokidsettingshub.data.batteryinfo.BatteryInfoSource
 import com.example.rokidsettingshub.data.deviceinfo.DeviceInfoSource
+import com.example.rokidsettingshub.model.BatteryInfoSnapshot
+import com.example.rokidsettingshub.model.BatteryInfoState
 import com.example.rokidsettingshub.model.BluetoothFocusSection
 import com.example.rokidsettingshub.data.storage.StoredMainPhone
 import com.example.rokidsettingshub.model.DeviceInfoSnapshot
@@ -74,6 +77,25 @@ class HubViewModelTest {
         )
 
         assertEquals(expected, viewModel.deviceInfoState.value)
+    }
+
+    @Test
+    fun batteryInfoStateIsLoadedFromSource() {
+        val expected = BatteryInfoState.fromSnapshot(
+            BatteryInfoSnapshot(
+                levelPercent = 100,
+                status = 5,
+                health = 2,
+                temperatureTenthsC = 225,
+                technology = "Li-ion",
+                cycleCount = 2,
+            ),
+        )
+        val viewModel = HubViewModel(
+            batteryInfoSource = FakeBatteryInfoSource(expected),
+        )
+
+        assertEquals(expected, viewModel.batteryInfoState.value)
     }
 
     @Test
@@ -300,5 +322,11 @@ class HubViewModelTest {
         private val state: DeviceInfoState,
     ) : DeviceInfoSource {
         override fun load(): DeviceInfoState = state
+    }
+
+    private class FakeBatteryInfoSource(
+        private val state: BatteryInfoState,
+    ) : BatteryInfoSource {
+        override fun load(): BatteryInfoState = state
     }
 }

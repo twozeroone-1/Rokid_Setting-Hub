@@ -5,8 +5,11 @@ import com.example.rokidsettingshub.data.bluetooth.BluetoothDeviceActions
 import com.example.rokidsettingshub.data.bluetooth.BluetoothRepository
 import com.example.rokidsettingshub.data.bluetooth.BluetoothScanner
 import com.example.rokidsettingshub.data.bluetooth.BondedDeviceSource
+import com.example.rokidsettingshub.data.batteryinfo.BatteryInfoSource
+import com.example.rokidsettingshub.data.batteryinfo.UnavailableBatteryInfoSource
 import com.example.rokidsettingshub.data.deviceinfo.DeviceInfoSource
 import com.example.rokidsettingshub.data.deviceinfo.UnavailableDeviceInfoSource
+import com.example.rokidsettingshub.model.BatteryInfoState
 import com.example.rokidsettingshub.model.BluetoothFocusSection
 import com.example.rokidsettingshub.model.BluetoothFocusState
 import com.example.rokidsettingshub.model.BluetoothScreenState
@@ -24,12 +27,15 @@ class HubViewModel(
         deviceActions = NoOpBluetoothDeviceActions,
         loadMainPhone = { null },
     ),
+    batteryInfoSource: BatteryInfoSource = UnavailableBatteryInfoSource,
     deviceInfoSource: DeviceInfoSource = UnavailableDeviceInfoSource,
 ) : ViewModel() {
     private val _currentSection = MutableStateFlow<HubSection?>(null)
     val currentSection: StateFlow<HubSection?> = _currentSection.asStateFlow()
     private val _selectedHubSection = MutableStateFlow(HubSection.Bluetooth)
     val selectedHubSection: StateFlow<HubSection> = _selectedHubSection.asStateFlow()
+    private val _batteryInfoState = MutableStateFlow(batteryInfoSource.load())
+    val batteryInfoState: StateFlow<BatteryInfoState> = _batteryInfoState.asStateFlow()
     private val _deviceInfoState = MutableStateFlow(deviceInfoSource.load())
     val deviceInfoState: StateFlow<DeviceInfoState> = _deviceInfoState.asStateFlow()
     private val _bluetoothFocusState = MutableStateFlow(BluetoothFocusState())

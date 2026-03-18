@@ -26,6 +26,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.example.rokidsettingshub.R
 import com.example.rokidsettingshub.model.BluetoothFocusState
+import com.example.rokidsettingshub.model.BatteryInfoState
 import com.example.rokidsettingshub.model.DeviceInfoState
 import com.example.rokidsettingshub.model.BluetoothScreenState
 import com.example.rokidsettingshub.model.HubSection
@@ -41,6 +42,7 @@ fun HubScreen(
     currentSection: HubSection?,
     selectedHubSection: HubSection,
     bluetoothState: BluetoothScreenState,
+    batteryInfoState: BatteryInfoState,
     deviceInfoState: DeviceInfoState,
     bluetoothFocusState: BluetoothFocusState,
     onMoveHubSelection: (Int) -> Unit,
@@ -72,9 +74,13 @@ fun HubScreen(
             onBack = onBackFromSection,
             modifier = modifier,
         )
-        HubSection.WiFi,
-        HubSection.Battery -> PlaceholderSectionScreen(
+        HubSection.WiFi -> PlaceholderSectionScreen(
             section = currentSection,
+            onBack = onBackFromSection,
+            modifier = modifier,
+        )
+        HubSection.Battery -> BatteryInfoScreen(
+            state = batteryInfoState,
             onBack = onBackFromSection,
             modifier = modifier,
         )

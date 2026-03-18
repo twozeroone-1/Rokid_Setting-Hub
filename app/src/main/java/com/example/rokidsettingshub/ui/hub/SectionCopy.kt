@@ -18,7 +18,7 @@ internal fun sectionCopyFor(section: HubSection): SectionCopy = when (section) {
         placeholderBodyResId = R.string.section_wifi_placeholder_body,
     )
     HubSection.Battery -> SectionCopy(
-        cardBodyResId = R.string.section_placeholder_card_body,
+        cardBodyResId = R.string.section_battery_card_body,
         placeholderBodyResId = R.string.section_battery_placeholder_body,
     )
     HubSection.DeviceInfo -> SectionCopy(

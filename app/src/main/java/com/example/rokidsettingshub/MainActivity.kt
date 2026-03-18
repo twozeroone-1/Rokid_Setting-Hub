@@ -12,6 +12,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.rokidsettingshub.data.bluetooth.createBluetoothRepository
+import com.example.rokidsettingshub.data.batteryinfo.AndroidBatteryInfoSource
 import com.example.rokidsettingshub.data.deviceinfo.AndroidDeviceInfoSource
 import com.example.rokidsettingshub.data.storage.MainPhoneStore
 import com.example.rokidsettingshub.ui.hub.HubScreen
@@ -28,6 +29,9 @@ class MainActivity : ComponentActivity() {
     }
 
     private val hubViewModelFactory by lazy {
+        val batteryInfoSource = AndroidBatteryInfoSource(
+            context = applicationContext,
+        )
         val deviceInfoSource = AndroidDeviceInfoSource(
             dataDirectory = applicationContext.filesDir,
         )
@@ -36,6 +40,7 @@ class MainActivity : ComponentActivity() {
                 @Suppress("UNCHECKED_CAST")
                 return HubViewModel(
                     bluetoothRepository = bluetoothRepository,
+                    batteryInfoSource = batteryInfoSource,
                     deviceInfoSource = deviceInfoSource,
                 ) as T
             }
@@ -52,6 +57,7 @@ class MainActivity : ComponentActivity() {
             val currentSection by hubViewModel.currentSection.collectAsState()
             val selectedHubSection by hubViewModel.selectedHubSection.collectAsState()
             val bluetoothScreenState by hubViewModel.bluetoothScreenState.collectAsState()
+            val batteryInfoState by hubViewModel.batteryInfoState.collectAsState()
             val deviceInfoState by hubViewModel.deviceInfoState.collectAsState()
             val bluetoothFocusState by hubViewModel.bluetoothFocusState.collectAsState()
 
@@ -59,6 +65,7 @@ class MainActivity : ComponentActivity() {
                 currentSection = currentSection,
                 selectedHubSection = selectedHubSection,
                 bluetoothState = bluetoothScreenState,
+                batteryInfoState = batteryInfoState,
                 deviceInfoState = deviceInfoState,
                 bluetoothFocusState = bluetoothFocusState,
                 onMoveHubSelection = hubViewModel::moveHubSelection,
