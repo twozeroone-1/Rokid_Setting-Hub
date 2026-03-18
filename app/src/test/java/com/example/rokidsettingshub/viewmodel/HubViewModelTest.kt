@@ -17,4 +17,15 @@ class HubViewModelTest {
 
         assertEquals(HubSection.Bluetooth, viewModel.currentSection.value)
     }
+
+    @Test
+    fun returningToHubClearsCurrentSection() {
+        val viewModel = HubViewModel()
+
+        viewModel.selectSection(HubSection.Bluetooth)
+
+        viewModel.returnToHub()
+
+        assertNull(viewModel.currentSection.value)
+    }
 }
