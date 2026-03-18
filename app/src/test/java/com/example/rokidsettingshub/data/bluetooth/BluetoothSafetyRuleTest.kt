@@ -81,14 +81,26 @@ class BluetoothSafetyRuleTest {
 
     private class FakeBluetoothScanner : BluetoothScanner {
         override fun setScanResultsListener(listener: (List<ManagedDevice>) -> Unit) = Unit
+
+        override fun setScanStateListener(listener: (Boolean) -> Unit) = Unit
+
+        override fun setDeviceStateChangedListener(listener: () -> Unit) = Unit
+
+        override fun startScan(): Boolean = false
+
+        override fun stopScan() = Unit
     }
 
     private class FakeDeviceActions : BluetoothDeviceActions {
+        override fun pair(address: String): Boolean = false
+
         val forgottenAddresses = mutableListOf<String>()
 
         override fun connect(address: String) = Unit
 
         override fun disconnect(address: String) = Unit
+
+        override fun openDetails(address: String) = Unit
 
         override fun forget(address: String) {
             forgottenAddresses += address

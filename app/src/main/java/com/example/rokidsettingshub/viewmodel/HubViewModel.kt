@@ -15,7 +15,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 class HubViewModel(
-    bluetoothRepository: BluetoothRepository = BluetoothRepository(
+    private val bluetoothRepository: BluetoothRepository = BluetoothRepository(
         bondedDeviceSource = EmptyBondedDeviceSource,
         scanner = NoOpBluetoothScanner,
         deviceActions = NoOpBluetoothDeviceActions,
@@ -28,11 +28,13 @@ class HubViewModel(
     val bluetoothFocusState: StateFlow<BluetoothFocusState> = _bluetoothFocusState.asStateFlow()
     val bluetoothScreenState: StateFlow<BluetoothScreenState> = bluetoothRepository.state
     private var lastBluetoothMoveUptimeMs = Long.MIN_VALUE
+    private var lastBluetoothMoveDirection = 0
 
     fun selectSection(section: HubSection) {
         if (section == HubSection.Bluetooth) {
             _bluetoothFocusState.value = BluetoothFocusState()
             lastBluetoothMoveUptimeMs = Long.MIN_VALUE
+            lastBluetoothMoveDirection = 0
         }
         _currentSection.value = section
     }
@@ -47,6 +49,7 @@ class HubViewModel(
         }
         if (
             lastBluetoothMoveUptimeMs != Long.MIN_VALUE &&
+            direction == lastBluetoothMoveDirection &&
             eventUptimeMs - lastBluetoothMoveUptimeMs < BLUETOOTH_MOVE_DEBOUNCE_MS
         ) {
             return
@@ -63,6 +66,7 @@ class HubViewModel(
             selectedSection = sections[nextIndex],
         )
         lastBluetoothMoveUptimeMs = eventUptimeMs
+        lastBluetoothMoveDirection = direction
     }
 
     fun selectBluetoothSection(section: BluetoothFocusSection) {
@@ -83,6 +87,22 @@ class HubViewModel(
         _bluetoothFocusState.value = _bluetoothFocusState.value.copy(detailSection = null)
         return true
     }
+
+    fun startBluetoothScan() {
+        bluetoothRepository.startScan()
+    }
+
+    fun stopBluetoothScan() {
+        bluetoothRepository.stopScan()
+    }
+
+    fun pairBluetoothDevice(address: String) {
+        bluetoothRepository.pair(address)
+    }
+
+    fun openBluetoothDeviceDetails(address: String) {
+        bluetoothRepository.openDeviceDetails(address)
+    }
 }
 
 private const val BLUETOOTH_MOVE_DEBOUNCE_MS = 180L
@@ -93,12 +113,24 @@ private object EmptyBondedDeviceSource : BondedDeviceSource {
 
 private object NoOpBluetoothScanner : BluetoothScanner {
     override fun setScanResultsListener(listener: (List<ManagedDevice>) -> Unit) = Unit
+
+    override fun setScanStateListener(listener: (Boolean) -> Unit) = Unit
+
+    override fun setDeviceStateChangedListener(listener: () -> Unit) = Unit
+
+    override fun startScan(): Boolean = false
+
+    override fun stopScan() = Unit
 }
 
 private object NoOpBluetoothDeviceActions : BluetoothDeviceActions {
+    override fun pair(address: String): Boolean = false
+
     override fun connect(address: String) = Unit
 
     override fun disconnect(address: String) = Unit
+
+    override fun openDetails(address: String) = Unit
 
     override fun forget(address: String) = Unit
 }

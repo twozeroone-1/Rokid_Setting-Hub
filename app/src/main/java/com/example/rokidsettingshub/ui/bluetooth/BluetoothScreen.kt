@@ -39,6 +39,10 @@ fun BluetoothScreen(
     state: BluetoothScreenState,
     navigationState: BluetoothFocusState,
     onMoveFocus: (Int, Long) -> Unit,
+    onStartScan: () -> Unit,
+    onStopScan: () -> Unit,
+    onPairDevice: (String) -> Unit,
+    onOpenDeviceDetails: (String) -> Unit,
     onSelectSection: (BluetoothFocusSection) -> Unit,
     onActivateSelectedSection: () -> Unit,
     onBackFromDetail: () -> Unit,
@@ -67,6 +71,10 @@ fun BluetoothScreen(
         BluetoothDetailScreen(
             state = state,
             section = navigationState.detailSection,
+            onStartScan = onStartScan,
+            onStopScan = onStopScan,
+            onPairDevice = onPairDevice,
+            onOpenDeviceDetails = onOpenDeviceDetails,
             onBack = onBackFromDetail,
             modifier = modifier,
         )
@@ -159,6 +167,10 @@ private fun BluetoothOverviewScreen(
 private fun BluetoothDetailScreen(
     state: BluetoothScreenState,
     section: BluetoothFocusSection,
+    onStartScan: () -> Unit,
+    onStopScan: () -> Unit,
+    onPairDevice: (String) -> Unit,
+    onOpenDeviceDetails: (String) -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -192,8 +204,10 @@ private fun BluetoothDetailScreen(
                 SectionCard(
                     title = stringResource(R.string.bluetooth_main_phone_title),
                     supportingText = state.mainPhone?.name ?: stringResource(R.string.bluetooth_main_phone_empty),
-                    enabled = false,
-                    onClick = {},
+                    enabled = state.mainPhone != null,
+                    onClick = {
+                        state.mainPhone?.let { onOpenDeviceDetails(it.address) }
+                    },
                 )
             }
             BluetoothFocusSection.MyDevices -> {
@@ -201,6 +215,7 @@ private fun BluetoothDetailScreen(
                     title = stringResource(R.string.bluetooth_my_devices_title),
                     devices = state.myDevices,
                     emptyText = stringResource(R.string.bluetooth_my_devices_empty),
+                    onDeviceSelected = { device -> onOpenDeviceDetails(device.address) },
                 )
             }
             BluetoothFocusSection.AvailableDevices -> {
@@ -208,15 +223,29 @@ private fun BluetoothDetailScreen(
                     title = stringResource(R.string.bluetooth_available_devices_title),
                     devices = state.availableDevices,
                     emptyText = stringResource(R.string.bluetooth_available_devices_empty),
+                    onDeviceSelected = { device -> onPairDevice(device.address) },
                 )
             }
             BluetoothFocusSection.Scan -> {
                 Button(
-                    onClick = {},
-                    enabled = false,
+                    onClick = {
+                        if (state.isScanning) {
+                            onStopScan()
+                        } else {
+                            onStartScan()
+                        }
+                    },
                     modifier = Modifier.fillMaxWidth(),
                 ) {
-                    Text(stringResource(R.string.bluetooth_scan_button))
+                    Text(
+                        stringResource(
+                            if (state.isScanning) {
+                                R.string.bluetooth_stop_scan_button
+                            } else {
+                                R.string.bluetooth_scan_button
+                            },
+                        ),
+                    )
                 }
                 Text(
                     text = stringResource(
@@ -246,6 +275,7 @@ private fun BluetoothDeviceSection(
     title: String,
     devices: List<ManagedDevice>,
     emptyText: String,
+    onDeviceSelected: (ManagedDevice) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -267,8 +297,8 @@ private fun BluetoothDeviceSection(
                 SectionCard(
                     title = device.name,
                     supportingText = device.supportingText(),
-                    enabled = false,
-                    onClick = {},
+                    enabled = true,
+                    onClick = { onDeviceSelected(device) },
                 )
             }
         }

@@ -109,6 +109,16 @@ class HubViewModelTest {
     }
 
     @Test
+    fun oppositeDirectionMovementIsNotDebounced() {
+        val viewModel = HubViewModel()
+
+        viewModel.moveBluetoothFocus(direction = 1, eventUptimeMs = 1_000L)
+        viewModel.moveBluetoothFocus(direction = -1, eventUptimeMs = 1_080L)
+
+        assertEquals(BluetoothFocusSection.Status, viewModel.bluetoothFocusState.value.selectedSection)
+    }
+
+    @Test
     fun activatingSelectedBluetoothSectionOpensDetail() {
         val viewModel = HubViewModel()
 
@@ -130,6 +140,69 @@ class HubViewModelTest {
         assertFalse(viewModel.handleBluetoothBack())
     }
 
+    @Test
+    fun startingBluetoothScanUpdatesBluetoothState() {
+        val repository = BluetoothRepository(
+            bondedDeviceSource = FakeBondedDeviceSource(emptyList()),
+            scanner = FakeBluetoothScanner(),
+            deviceActions = FakeBluetoothDeviceActions(),
+            loadMainPhone = { null },
+        )
+        val viewModel = HubViewModel(bluetoothRepository = repository)
+
+        viewModel.startBluetoothScan()
+
+        assertTrue(viewModel.bluetoothScreenState.value.isScanning)
+    }
+
+    @Test
+    fun stoppingBluetoothScanClearsBluetoothState() {
+        val repository = BluetoothRepository(
+            bondedDeviceSource = FakeBondedDeviceSource(emptyList()),
+            scanner = FakeBluetoothScanner(),
+            deviceActions = FakeBluetoothDeviceActions(),
+            loadMainPhone = { null },
+        )
+        val viewModel = HubViewModel(bluetoothRepository = repository)
+
+        viewModel.startBluetoothScan()
+        viewModel.stopBluetoothScan()
+
+        assertFalse(viewModel.bluetoothScreenState.value.isScanning)
+    }
+
+    @Test
+    fun pairingBluetoothDeviceDispatchesRequest() {
+        val deviceActions = FakeBluetoothDeviceActions()
+        val repository = BluetoothRepository(
+            bondedDeviceSource = FakeBondedDeviceSource(emptyList()),
+            scanner = FakeBluetoothScanner(),
+            deviceActions = deviceActions,
+            loadMainPhone = { null },
+        )
+        val viewModel = HubViewModel(bluetoothRepository = repository)
+
+        viewModel.pairBluetoothDevice("AA:BB:CC:DD:EE:51")
+
+        assertEquals(listOf("AA:BB:CC:DD:EE:51"), deviceActions.pairedAddresses)
+    }
+
+    @Test
+    fun openingBluetoothDeviceDetailsDispatchesRequest() {
+        val deviceActions = FakeBluetoothDeviceActions()
+        val repository = BluetoothRepository(
+            bondedDeviceSource = FakeBondedDeviceSource(emptyList()),
+            scanner = FakeBluetoothScanner(),
+            deviceActions = deviceActions,
+            loadMainPhone = { null },
+        )
+        val viewModel = HubViewModel(bluetoothRepository = repository)
+
+        viewModel.openBluetoothDeviceDetails("AA:BB:CC:DD:EE:52")
+
+        assertEquals(listOf("AA:BB:CC:DD:EE:52"), deviceActions.detailAddresses)
+    }
+
     private class FakeBondedDeviceSource(
         private val devices: List<ManagedDevice>,
     ) : BondedDeviceSource {
@@ -143,15 +216,35 @@ class HubViewModelTest {
             this.listener = listener
         }
 
+        override fun setScanStateListener(listener: (Boolean) -> Unit) = Unit
+
+        override fun setDeviceStateChangedListener(listener: () -> Unit) = Unit
+
+        override fun startScan(): Boolean = true
+
+        override fun stopScan() = Unit
+
         fun emit(devices: List<ManagedDevice>) {
             listener?.invoke(devices)
         }
     }
 
     private class FakeBluetoothDeviceActions : BluetoothDeviceActions {
+        val pairedAddresses = mutableListOf<String>()
+        val detailAddresses = mutableListOf<String>()
+
+        override fun pair(address: String): Boolean {
+            pairedAddresses += address
+            return true
+        }
+
         override fun connect(address: String) = Unit
 
         override fun disconnect(address: String) = Unit
+
+        override fun openDetails(address: String) {
+            detailAddresses += address
+        }
 
         override fun forget(address: String) = Unit
     }

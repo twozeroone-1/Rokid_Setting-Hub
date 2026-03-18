@@ -73,6 +73,93 @@ class BluetoothRepositoryContractTest {
     }
 
     @Test
+    fun startScanDispatchesToScannerAndMarksScanning() {
+        val scanner = FakeBluetoothScanner()
+        val repository = BluetoothRepository(
+            bondedDeviceSource = FakeBondedDeviceSource(emptyList()),
+            scanner = scanner,
+            deviceActions = FakeDeviceActions(),
+            loadMainPhone = { null },
+        )
+
+        val scanStarted = repository.startScan()
+
+        assertTrue(scanStarted)
+        assertTrue(scanner.startRequested)
+        assertTrue(repository.state.value.isScanning)
+    }
+
+    @Test
+    fun scanFinishedMarksRepositoryIdle() {
+        val scanner = FakeBluetoothScanner()
+        val repository = BluetoothRepository(
+            bondedDeviceSource = FakeBondedDeviceSource(emptyList()),
+            scanner = scanner,
+            deviceActions = FakeDeviceActions(),
+            loadMainPhone = { null },
+        )
+
+        repository.startScan()
+        scanner.emitScanState(isScanning = false)
+
+        assertFalse(repository.state.value.isScanning)
+    }
+
+    @Test
+    fun pairDispatchesRequest() {
+        val deviceActions = FakeDeviceActions()
+        val repository = BluetoothRepository(
+            bondedDeviceSource = FakeBondedDeviceSource(emptyList()),
+            scanner = FakeBluetoothScanner(),
+            deviceActions = deviceActions,
+            loadMainPhone = { null },
+        )
+
+        val pairingStarted = repository.pair("AA:BB:CC:DD:EE:27")
+
+        assertTrue(pairingStarted)
+        assertEquals(listOf("AA:BB:CC:DD:EE:27"), deviceActions.pairedAddresses)
+    }
+
+    @Test
+    fun openingDeviceDetailsDispatchesRequest() {
+        val deviceActions = FakeDeviceActions()
+        val repository = BluetoothRepository(
+            bondedDeviceSource = FakeBondedDeviceSource(emptyList()),
+            scanner = FakeBluetoothScanner(),
+            deviceActions = deviceActions,
+            loadMainPhone = { null },
+        )
+
+        repository.openDeviceDetails("AA:BB:CC:DD:EE:29")
+
+        assertEquals(listOf("AA:BB:CC:DD:EE:29"), deviceActions.detailAddresses)
+    }
+
+    @Test
+    fun deviceStateChangesReloadBondedDevices() {
+        val bondedDeviceSource = FakeBondedDeviceSource(emptyList())
+        val scanner = FakeBluetoothScanner()
+        val pairedPhone = device(
+            address = "AA:BB:CC:DD:EE:28",
+            name = "Galaxy Fold",
+            type = DeviceType.Phone,
+            state = DeviceConnectionState.Paired,
+        )
+        val repository = BluetoothRepository(
+            bondedDeviceSource = bondedDeviceSource,
+            scanner = scanner,
+            deviceActions = FakeDeviceActions(),
+            loadMainPhone = { null },
+        )
+
+        bondedDeviceSource.devices = listOf(pairedPhone)
+        scanner.emitDeviceStateChanged()
+
+        assertEquals(listOf(pairedPhone), repository.state.value.myDevices)
+    }
+
+    @Test
     fun connectDispatchesRequest() {
         val deviceActions = FakeDeviceActions()
         val repository = BluetoothRepository(
@@ -139,16 +226,45 @@ class BluetoothRepositoryContractTest {
     }
 
     private class FakeBondedDeviceSource(
-        private val devices: List<ManagedDevice>,
+        var devices: List<ManagedDevice>,
     ) : BondedDeviceSource {
         override fun loadBondedDevices(): List<ManagedDevice> = devices
     }
 
     private class FakeBluetoothScanner : BluetoothScanner {
         private var listener: ((List<ManagedDevice>) -> Unit)? = null
+        private var scanStateListener: ((Boolean) -> Unit)? = null
+        private var deviceStateChangedListener: (() -> Unit)? = null
+        var startRequested = false
+        var stopRequested = false
 
         override fun setScanResultsListener(listener: (List<ManagedDevice>) -> Unit) {
             this.listener = listener
+        }
+
+        override fun setScanStateListener(listener: (Boolean) -> Unit) {
+            scanStateListener = listener
+        }
+
+        override fun setDeviceStateChangedListener(listener: () -> Unit) {
+            deviceStateChangedListener = listener
+        }
+
+        override fun startScan(): Boolean {
+            startRequested = true
+            return true
+        }
+
+        override fun stopScan() {
+            stopRequested = true
+        }
+
+        fun emitScanState(isScanning: Boolean) {
+            scanStateListener?.invoke(isScanning)
+        }
+
+        fun emitDeviceStateChanged() {
+            deviceStateChangedListener?.invoke()
         }
 
         fun emit(devices: List<ManagedDevice>) {
@@ -157,9 +273,16 @@ class BluetoothRepositoryContractTest {
     }
 
     private class FakeDeviceActions : BluetoothDeviceActions {
+        val pairedAddresses = mutableListOf<String>()
+        val detailAddresses = mutableListOf<String>()
         val connectedAddresses = mutableListOf<String>()
         val disconnectedAddresses = mutableListOf<String>()
         val forgottenAddresses = mutableListOf<String>()
+
+        override fun pair(address: String): Boolean {
+            pairedAddresses += address
+            return true
+        }
 
         override fun connect(address: String) {
             connectedAddresses += address
@@ -167,6 +290,10 @@ class BluetoothRepositoryContractTest {
 
         override fun disconnect(address: String) {
             disconnectedAddresses += address
+        }
+
+        override fun openDetails(address: String) {
+            detailAddresses += address
         }
 
         override fun forget(address: String) {

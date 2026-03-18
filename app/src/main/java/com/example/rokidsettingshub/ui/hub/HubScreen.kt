@@ -24,6 +24,10 @@ fun HubScreen(
     bluetoothState: BluetoothScreenState,
     bluetoothFocusState: BluetoothFocusState,
     onMoveBluetoothFocus: (Int, Long) -> Unit,
+    onStartBluetoothScan: () -> Unit,
+    onStopBluetoothScan: () -> Unit,
+    onPairBluetoothDevice: (String) -> Unit,
+    onOpenBluetoothDeviceDetails: (String) -> Unit,
     onSelectBluetoothSection: (BluetoothFocusSection) -> Unit,
     onActivateBluetoothSection: () -> Unit,
     onBackFromBluetoothDetail: () -> Unit,
@@ -36,6 +40,10 @@ fun HubScreen(
             state = bluetoothState,
             navigationState = bluetoothFocusState,
             onMoveFocus = onMoveBluetoothFocus,
+            onStartScan = onStartBluetoothScan,
+            onStopScan = onStopBluetoothScan,
+            onPairDevice = onPairBluetoothDevice,
+            onOpenDeviceDetails = onOpenBluetoothDeviceDetails,
             onSelectSection = onSelectBluetoothSection,
             onActivateSelectedSection = onActivateBluetoothSection,
             onBackFromDetail = onBackFromBluetoothDetail,
@@ -79,7 +87,7 @@ private fun HubHome(
         HubSection.entries.forEach { section ->
             SectionCard(
                 title = stringResource(section.titleResId()),
-                supportingText = stringResource(section.cardSupportingTextResId()),
+                supportingText = stringResource(sectionCopyFor(section).cardBodyResId),
                 enabled = true,
                 onClick = { onSectionSelected(section) },
             )
@@ -92,11 +100,4 @@ private fun HubSection.titleResId(): Int = when (this) {
     HubSection.WiFi -> R.string.section_wifi_title
     HubSection.Battery -> R.string.section_battery_title
     HubSection.DeviceInfo -> R.string.section_device_info_title
-}
-
-private fun HubSection.cardSupportingTextResId(): Int = when (this) {
-    HubSection.Bluetooth -> R.string.section_bluetooth_card_body
-    HubSection.WiFi,
-    HubSection.Battery,
-    HubSection.DeviceInfo -> R.string.section_placeholder_card_body
 }

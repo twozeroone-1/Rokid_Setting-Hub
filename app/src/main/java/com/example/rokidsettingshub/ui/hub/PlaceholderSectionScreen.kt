@@ -33,7 +33,7 @@ fun PlaceholderSectionScreen(
             style = MaterialTheme.typography.headlineSmall,
         )
         Text(
-            text = stringResource(section.placeholderBodyResId()),
+            text = stringResource(sectionCopyFor(section).placeholderBodyResId),
             style = MaterialTheme.typography.bodyMedium,
         )
         Spacer(modifier = Modifier.height(8.dp))
@@ -51,11 +51,4 @@ private fun HubSection.placeholderTitleResId(): Int = when (this) {
     HubSection.WiFi -> R.string.section_wifi_title
     HubSection.Battery -> R.string.section_battery_title
     HubSection.DeviceInfo -> R.string.section_device_info_title
-}
-
-private fun HubSection.placeholderBodyResId(): Int = when (this) {
-    HubSection.Bluetooth -> R.string.bluetooth_placeholder_body
-    HubSection.WiFi -> R.string.section_wifi_placeholder_body
-    HubSection.Battery -> R.string.section_battery_placeholder_body
-    HubSection.DeviceInfo -> R.string.section_device_info_placeholder_body
 }
