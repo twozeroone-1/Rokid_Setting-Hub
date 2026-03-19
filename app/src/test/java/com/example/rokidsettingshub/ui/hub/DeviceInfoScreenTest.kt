@@ -2,6 +2,7 @@ package com.example.rokidsettingshub.ui.hub
 
 import androidx.compose.ui.graphics.Color
 import com.example.rokidsettingshub.model.DeviceInfoState
+import com.example.rokidsettingshub.ui.common.SubmenuCarouselItem
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -49,6 +50,35 @@ class DeviceInfoScreenTest {
                 DeviceInfoEntry("Free Storage", "12.0 GB"),
             ),
             entries,
+        )
+    }
+
+    @Test
+    fun selectionItemsExposeOverviewAndStorageCards() {
+        val items = deviceInfoSelectionItems(
+            DeviceInfoState(
+                modelName = "Rokid Glasses",
+                androidVersion = "Android 12",
+                totalStorage = "32.0 GB",
+                usedStorage = "20.0 GB",
+                freeStorage = "12.0 GB",
+            ),
+        )
+
+        assertEquals(
+            listOf(
+                SubmenuCarouselItem(
+                    key = "Overview",
+                    title = "Overview",
+                    supportingText = "Rokid Glasses | Android 12",
+                ),
+                SubmenuCarouselItem(
+                    key = "Storage",
+                    title = "Storage",
+                    supportingText = "12.0 GB free",
+                ),
+            ),
+            items,
         )
     }
 

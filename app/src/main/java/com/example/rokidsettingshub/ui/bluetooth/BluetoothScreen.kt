@@ -34,6 +34,9 @@ import com.example.rokidsettingshub.model.DeviceConnectionState
 import com.example.rokidsettingshub.model.DeviceType
 import com.example.rokidsettingshub.model.ManagedDevice
 import com.example.rokidsettingshub.ui.common.SectionCard
+import com.example.rokidsettingshub.ui.common.SubmenuCarousel
+import com.example.rokidsettingshub.ui.common.SubmenuCarouselItem
+import com.example.rokidsettingshub.ui.common.submenuCarouselPageTarget
 
 @Composable
 fun BluetoothScreen(
@@ -112,84 +115,29 @@ private fun BluetoothOverviewScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val focusRequester = remember { FocusRequester() }
-
-    LaunchedEffect(navigationState.detailSection) {
-        focusRequester.requestFocus()
+    val items = BluetoothFocusSection.entries.map { section ->
+        SubmenuCarouselItem(
+            key = section.name,
+            title = section.title(),
+            supportingText = section.summary(state),
+        )
     }
 
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .focusRequester(focusRequester)
-            .focusable()
-            .onPreviewKeyEvent { event ->
-                if (event.type != KeyEventType.KeyDown) {
-                    return@onPreviewKeyEvent false
-                }
-
-                when (event.key) {
-                    Key.Back -> {
-                        onBack()
-                        true
-                    }
-                    Key.DirectionLeft -> {
-                        onBack()
-                        true
-                    }
-                    Key.DirectionDown -> {
-                        onMoveFocus(1, SystemClock.uptimeMillis())
-                        true
-                    }
-                    Key.DirectionUp -> {
-                        onMoveFocus(-1, SystemClock.uptimeMillis())
-                        true
-                    }
-                    Key.Enter,
-                    Key.NumPadEnter,
-                    Key.DirectionCenter -> {
-                        onActivateSelectedSection()
-                        true
-                    }
-                    else -> false
-                }
-            }
-            .padding(20.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        Text(
-            text = stringResource(R.string.section_bluetooth_title),
-            style = MaterialTheme.typography.headlineSmall,
-        )
-        Text(
-            text = stringResource(R.string.bluetooth_focus_hint),
-            style = MaterialTheme.typography.bodyMedium,
-        )
-
-        BluetoothFocusSection.entries.forEach { section ->
-            SectionCard(
-                title = section.title(),
-                supportingText = section.summary(state),
-                enabled = true,
-                selected = navigationState.selectedSection == section,
-                onClick = {
-                    if (navigationState.selectedSection == section) {
-                        onActivateSelectedSection()
-                    } else {
-                        onSelectSection(section)
-                    }
-                },
-            )
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
-        Button(
-            onClick = onBack,
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Text(stringResource(R.string.back))
-        }
-    }
+    SubmenuCarousel(
+        title = stringResource(R.string.section_bluetooth_title),
+        subtitle = stringResource(R.string.submenu_focus_hint),
+        items = items,
+        selectedIndex = bluetoothOverviewPageTarget(navigationState.selectedSection),
+        onMoveSelection = { direction ->
+            onMoveFocus(direction, SystemClock.uptimeMillis())
+        },
+        onActivateSelection = onActivateSelectedSection,
+        onSelectItem = { index ->
+            onSelectSection(BluetoothFocusSection.entries[index])
+        },
+        onBack = onBack,
+        modifier = modifier,
+    )
 }
 
 @Composable
@@ -392,6 +340,12 @@ private fun BluetoothFocusSection.summary(state: BluetoothScreenState): String =
         },
     )
 }
+
+internal fun bluetoothOverviewPageTarget(selectedSection: BluetoothFocusSection): Int =
+    submenuCarouselPageTarget(
+        selectedIndex = BluetoothFocusSection.entries.indexOf(selectedSection),
+        itemCount = BluetoothFocusSection.entries.size,
+    )
 
 @Composable
 private fun ManagedDevice.supportingText(): String {

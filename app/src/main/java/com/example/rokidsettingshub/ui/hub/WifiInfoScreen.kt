@@ -2,7 +2,6 @@ package com.example.rokidsettingshub.ui.hub
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -15,15 +14,11 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
@@ -31,10 +26,12 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.example.rokidsettingshub.R
 import com.example.rokidsettingshub.model.WifiInfoState
+import com.example.rokidsettingshub.ui.common.SubmenuCarousel
+import com.example.rokidsettingshub.ui.common.SubmenuCarouselItem
+import com.example.rokidsettingshub.ui.common.submenuCarouselPageTarget
 
 data class WifiInfoEntry(
     val label: String,
@@ -94,6 +91,19 @@ internal fun wifiInfoEntries(
     )
 }
 
+internal fun wifiInfoSelectionItems(state: WifiInfoState): List<SubmenuCarouselItem> = listOf(
+    SubmenuCarouselItem(
+        key = WifiInfoPage.Overview.name,
+        title = "Overview",
+        supportingText = "${state.wifiState} | ${state.connection}",
+    ),
+    SubmenuCarouselItem(
+        key = WifiInfoPage.Details.name,
+        title = "Details",
+        supportingText = "${state.networkName} | ${state.ipAddress}",
+    ),
+)
+
 @Composable
 fun WifiInfoScreen(
     state: WifiInfoState,
@@ -102,31 +112,25 @@ fun WifiInfoScreen(
     registerHardwareBackHandler: ((() -> Boolean)?) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    var pageIndex by rememberSaveable { mutableIntStateOf(0) }
-    val currentPage = WifiInfoPage.entries[pageIndex]
+    var selectedPageIndex by rememberSaveable { mutableIntStateOf(0) }
+    var activePageIndex by rememberSaveable { mutableIntStateOf(-1) }
+    val currentPage = WifiInfoPage.entries.getOrNull(activePageIndex)
     val visualStyle = wifiInfoVisualStyle()
-    val focusRequester = remember { FocusRequester() }
-
-    LaunchedEffect(Unit) {
-        focusRequester.requestFocus()
-    }
 
     BackHandler {
-        val backTarget = backFromWifiInfoPage(currentPage)
-        if (backTarget == null) {
+        if (currentPage == null) {
             onBack()
         } else {
-            pageIndex = backTarget.ordinal
+            activePageIndex = -1
         }
     }
 
     DisposableEffect(currentPage, onBack, registerHardwareBackHandler) {
         registerHardwareBackHandler {
-            val backTarget = backFromWifiInfoPage(currentPage)
-            if (backTarget == null) {
+            if (currentPage == null) {
                 onBack()
             } else {
-                pageIndex = backTarget.ordinal
+                activePageIndex = -1
             }
             true
         }
@@ -135,9 +139,53 @@ fun WifiInfoScreen(
         }
     }
 
+    if (currentPage == null) {
+        SubmenuCarousel(
+            title = stringResource(R.string.section_wifi_title),
+            subtitle = stringResource(R.string.submenu_focus_hint),
+            items = wifiInfoSelectionItems(state),
+            selectedIndex = submenuCarouselPageTarget(
+                selectedIndex = selectedPageIndex,
+                itemCount = WifiInfoPage.entries.size,
+            ),
+            onMoveSelection = { direction ->
+                selectedPageIndex = submenuCarouselPageTarget(
+                    selectedIndex = selectedPageIndex + direction,
+                    itemCount = WifiInfoPage.entries.size,
+                )
+            },
+            onActivateSelection = {
+                activePageIndex = selectedPageIndex
+            },
+            onSelectItem = { index ->
+                selectedPageIndex = index
+            },
+            onBack = onBack,
+            modifier = modifier,
+        )
+    } else {
+        WifiInfoDetailScreen(
+            state = state,
+            page = currentPage,
+            visualStyle = visualStyle,
+            onBackToSelection = { activePageIndex = -1 },
+            onOpenSystemWifiSettings = onOpenSystemWifiSettings,
+            modifier = modifier,
+        )
+    }
+}
+
+@Composable
+private fun WifiInfoDetailScreen(
+    state: WifiInfoState,
+    page: WifiInfoPage,
+    visualStyle: WifiInfoVisualStyle,
+    onBackToSelection: () -> Unit,
+    onOpenSystemWifiSettings: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     Column(
         modifier = modifier
-            .focusRequester(focusRequester)
             .focusable()
             .onPreviewKeyEvent { event ->
                 if (event.type != KeyEventType.KeyDown) {
@@ -145,29 +193,12 @@ fun WifiInfoScreen(
                 }
 
                 when (event.key) {
-                    Key.DirectionDown,
+                    Key.DirectionRight,
                     Key.Enter,
                     Key.NumPadEnter,
-                    Key.DirectionCenter,
-                    Key.DirectionRight -> {
-                        if (canLaunchWifiSettings(currentPage)) {
+                    Key.DirectionCenter -> {
+                        if (canLaunchWifiSettings(page)) {
                             onOpenSystemWifiSettings()
-                            return@onPreviewKeyEvent true
-                        }
-
-                        val nextPage = nextWifiInfoPage(currentPage)
-                        if (nextPage != currentPage) {
-                            pageIndex = nextPage.ordinal
-                            true
-                        } else {
-                            false
-                        }
-                    }
-
-                    Key.DirectionUp -> {
-                        val previousPage = previousWifiInfoPage(currentPage)
-                        if (previousPage != currentPage) {
-                            pageIndex = previousPage.ordinal
                             true
                         } else {
                             false
@@ -176,28 +207,15 @@ fun WifiInfoScreen(
 
                     Key.DirectionLeft,
                     Key.Back -> {
-                        val backTarget = backFromWifiInfoPage(currentPage)
-                        if (backTarget == null) {
-                            onBack()
-                        } else {
-                            pageIndex = backTarget.ordinal
-                        }
+                        onBackToSelection()
                         true
                     }
 
                     else -> false
                 }
             }
-            .then(
-                if (currentPage == WifiInfoPage.Overview) {
-                    Modifier.clickable { pageIndex = WifiInfoPage.Details.ordinal }
-                } else {
-                    Modifier
-                },
-            )
             .fillMaxWidth()
-            .padding(20.dp)
-            .semantics(mergeDescendants = true) {},
+            .padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Text(
@@ -210,17 +228,8 @@ fun WifiInfoScreen(
             style = MaterialTheme.typography.bodyMedium,
             color = visualStyle.bodyColor,
         )
-        Text(
-            text = if (currentPage == WifiInfoPage.Overview) {
-                stringResource(R.string.section_wifi_hint_next)
-            } else {
-                stringResource(R.string.section_wifi_hint_previous)
-            },
-            style = MaterialTheme.typography.bodySmall,
-            color = visualStyle.bodyColor,
-        )
 
-        wifiInfoEntries(state, currentPage).forEach { entry ->
+        wifiInfoEntries(state, page).forEach { entry ->
             Text(
                 text = entry.label,
                 style = MaterialTheme.typography.titleSmall,
@@ -234,24 +243,24 @@ fun WifiInfoScreen(
         }
 
         Spacer(modifier = Modifier.height(8.dp))
-        if (currentPage == WifiInfoPage.Details) {
+        if (page == WifiInfoPage.Details) {
             OutlinedButton(
                 onClick = onOpenSystemWifiSettings,
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 Text(text = stringResource(R.string.section_wifi_open_system_settings))
             }
-            OutlinedButton(
-                onClick = onBack,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .border(width = 1.dp, color = Color.White.copy(alpha = 0.4f)),
-            ) {
-                Text(
-                    text = stringResource(R.string.back),
-                    color = Color.White,
-                )
-            }
+        }
+        OutlinedButton(
+            onClick = onBackToSelection,
+            modifier = Modifier
+                .fillMaxWidth()
+                .border(width = 1.dp, color = Color.White.copy(alpha = 0.4f)),
+        ) {
+            Text(
+                text = stringResource(R.string.back),
+                color = Color.White,
+            )
         }
     }
 }

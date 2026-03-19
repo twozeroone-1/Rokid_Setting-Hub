@@ -13,4 +13,12 @@ class HubHomePagerTargetTest {
         assertEquals(2, hubHomePageTarget(HubSection.Battery))
         assertEquals(3, hubHomePageTarget(HubSection.DeviceInfo))
     }
+
+    @Test
+    fun homeCarouselGeometryMatchesTwoPointFiveCardLayout() {
+        val geometry = hubHomeCarouselGeometry()
+
+        assertEquals(0.56f, geometry.centerCardFraction)
+        assertEquals(0.22f, geometry.sidePeekFraction)
+    }
 }

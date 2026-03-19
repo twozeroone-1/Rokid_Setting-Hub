@@ -2,7 +2,6 @@ package com.example.rokidsettingshub.ui.hub
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -15,15 +14,11 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
@@ -31,10 +26,12 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.example.rokidsettingshub.R
 import com.example.rokidsettingshub.model.BatteryInfoState
+import com.example.rokidsettingshub.ui.common.SubmenuCarousel
+import com.example.rokidsettingshub.ui.common.SubmenuCarouselItem
+import com.example.rokidsettingshub.ui.common.submenuCarouselPageTarget
 
 data class BatteryInfoEntry(
     val label: String,
@@ -92,6 +89,19 @@ internal fun batteryInfoEntries(
     )
 }
 
+internal fun batteryInfoSelectionItems(state: BatteryInfoState): List<SubmenuCarouselItem> = listOf(
+    SubmenuCarouselItem(
+        key = BatteryInfoPage.Overview.name,
+        title = "Overview",
+        supportingText = "${state.level} | ${state.status}",
+    ),
+    SubmenuCarouselItem(
+        key = BatteryInfoPage.Details.name,
+        title = "Details",
+        supportingText = "${state.temperature} | ${state.cycleCount} cycles",
+    ),
+)
+
 @Composable
 fun BatteryInfoScreen(
     state: BatteryInfoState,
@@ -99,31 +109,25 @@ fun BatteryInfoScreen(
     registerHardwareBackHandler: ((() -> Boolean)?) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    var pageIndex by rememberSaveable { mutableIntStateOf(0) }
-    val currentPage = BatteryInfoPage.entries[pageIndex]
+    var selectedPageIndex by rememberSaveable { mutableIntStateOf(0) }
+    var activePageIndex by rememberSaveable { mutableIntStateOf(-1) }
+    val currentPage = BatteryInfoPage.entries.getOrNull(activePageIndex)
     val visualStyle = batteryInfoVisualStyle()
-    val focusRequester = remember { FocusRequester() }
-
-    LaunchedEffect(Unit) {
-        focusRequester.requestFocus()
-    }
 
     BackHandler {
-        val backTarget = backFromBatteryInfoPage(currentPage)
-        if (backTarget == null) {
+        if (currentPage == null) {
             onBack()
         } else {
-            pageIndex = backTarget.ordinal
+            activePageIndex = -1
         }
     }
 
     DisposableEffect(currentPage, onBack, registerHardwareBackHandler) {
         registerHardwareBackHandler {
-            val backTarget = backFromBatteryInfoPage(currentPage)
-            if (backTarget == null) {
+            if (currentPage == null) {
                 onBack()
             } else {
-                pageIndex = backTarget.ordinal
+                activePageIndex = -1
             }
             true
         }
@@ -132,9 +136,51 @@ fun BatteryInfoScreen(
         }
     }
 
+    if (currentPage == null) {
+        SubmenuCarousel(
+            title = stringResource(R.string.section_battery_title),
+            subtitle = stringResource(R.string.submenu_focus_hint),
+            items = batteryInfoSelectionItems(state),
+            selectedIndex = submenuCarouselPageTarget(
+                selectedIndex = selectedPageIndex,
+                itemCount = BatteryInfoPage.entries.size,
+            ),
+            onMoveSelection = { direction ->
+                selectedPageIndex = submenuCarouselPageTarget(
+                    selectedIndex = selectedPageIndex + direction,
+                    itemCount = BatteryInfoPage.entries.size,
+                )
+            },
+            onActivateSelection = {
+                activePageIndex = selectedPageIndex
+            },
+            onSelectItem = { index ->
+                selectedPageIndex = index
+            },
+            onBack = onBack,
+            modifier = modifier,
+        )
+    } else {
+        BatteryInfoDetailScreen(
+            state = state,
+            page = currentPage,
+            visualStyle = visualStyle,
+            onBackToSelection = { activePageIndex = -1 },
+            modifier = modifier,
+        )
+    }
+}
+
+@Composable
+private fun BatteryInfoDetailScreen(
+    state: BatteryInfoState,
+    page: BatteryInfoPage,
+    visualStyle: BatteryInfoVisualStyle,
+    onBackToSelection: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     Column(
         modifier = modifier
-            .focusRequester(focusRequester)
             .focusable()
             .onPreviewKeyEvent { event ->
                 if (event.type != KeyEventType.KeyDown) {
@@ -142,54 +188,17 @@ fun BatteryInfoScreen(
                 }
 
                 when (event.key) {
-                    Key.DirectionRight,
-                    Key.DirectionDown,
-                    Key.Enter,
-                    Key.NumPadEnter,
-                    Key.DirectionCenter -> {
-                        val nextPage = nextBatteryInfoPage(currentPage)
-                        if (nextPage != currentPage) {
-                            pageIndex = nextPage.ordinal
-                            true
-                        } else {
-                            false
-                        }
-                    }
-
-                    Key.DirectionUp -> {
-                        val previousPage = previousBatteryInfoPage(currentPage)
-                        if (previousPage != currentPage) {
-                            pageIndex = previousPage.ordinal
-                            true
-                        } else {
-                            false
-                        }
-                    }
-
                     Key.DirectionLeft,
                     Key.Back -> {
-                        val backTarget = backFromBatteryInfoPage(currentPage)
-                        if (backTarget == null) {
-                            onBack()
-                        } else {
-                            pageIndex = backTarget.ordinal
-                        }
+                        onBackToSelection()
                         true
                     }
 
                     else -> false
                 }
             }
-            .then(
-                if (currentPage == BatteryInfoPage.Overview) {
-                    Modifier.clickable { pageIndex = BatteryInfoPage.Details.ordinal }
-                } else {
-                    Modifier
-                },
-            )
             .fillMaxWidth()
-            .padding(20.dp)
-            .semantics(mergeDescendants = true) {},
+            .padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Text(
@@ -202,17 +211,8 @@ fun BatteryInfoScreen(
             style = MaterialTheme.typography.bodyMedium,
             color = visualStyle.bodyColor,
         )
-        Text(
-            text = if (currentPage == BatteryInfoPage.Overview) {
-                stringResource(R.string.section_battery_hint_next)
-            } else {
-                stringResource(R.string.section_battery_hint_previous)
-            },
-            style = MaterialTheme.typography.bodySmall,
-            color = visualStyle.bodyColor,
-        )
 
-        batteryInfoEntries(state, currentPage).forEach { entry ->
+        batteryInfoEntries(state, page).forEach { entry ->
             Text(
                 text = entry.label,
                 style = MaterialTheme.typography.titleSmall,
@@ -226,18 +226,16 @@ fun BatteryInfoScreen(
         }
 
         Spacer(modifier = Modifier.height(8.dp))
-        if (currentPage == BatteryInfoPage.Details) {
-            OutlinedButton(
-                onClick = onBack,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .border(width = 1.dp, color = Color.White.copy(alpha = 0.4f)),
-            ) {
-                Text(
-                    text = stringResource(R.string.back),
-                    color = Color.White,
-                )
-            }
+        OutlinedButton(
+            onClick = onBackToSelection,
+            modifier = Modifier
+                .fillMaxWidth()
+                .border(width = 1.dp, color = Color.White.copy(alpha = 0.4f)),
+        ) {
+            Text(
+                text = stringResource(R.string.back),
+                color = Color.White,
+            )
         }
     }
 }

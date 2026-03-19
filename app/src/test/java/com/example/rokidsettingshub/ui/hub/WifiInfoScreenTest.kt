@@ -2,6 +2,7 @@ package com.example.rokidsettingshub.ui.hub
 
 import androidx.compose.ui.graphics.Color
 import com.example.rokidsettingshub.model.WifiInfoState
+import com.example.rokidsettingshub.ui.common.SubmenuCarouselItem
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -52,6 +53,36 @@ class WifiInfoScreenTest {
                 WifiInfoEntry("Interface", "wlan0"),
             ),
             entries,
+        )
+    }
+
+    @Test
+    fun selectionItemsExposeOverviewAndDetailsCards() {
+        val items = wifiInfoSelectionItems(
+            WifiInfoState(
+                hardware = "Present",
+                wifiState = "Enabled",
+                connection = "Connected",
+                networkName = "AndroidWifi",
+                ipAddress = "10.0.2.16",
+                interfaceName = "wlan0",
+            ),
+        )
+
+        assertEquals(
+            listOf(
+                SubmenuCarouselItem(
+                    key = "Overview",
+                    title = "Overview",
+                    supportingText = "Enabled | Connected",
+                ),
+                SubmenuCarouselItem(
+                    key = "Details",
+                    title = "Details",
+                    supportingText = "AndroidWifi | 10.0.2.16",
+                ),
+            ),
+            items,
         )
     }
 

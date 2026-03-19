@@ -3,6 +3,7 @@
     <string name="app_name">Rokid Settings Hub</string>
     <string name="settings_hub_title">Settings Hub</string>
     <string name="settings_hub_subtitle">Choose a section to continue.</string>
+    <string name="submenu_focus_hint">Swipe once to move one section. Tap or enter to open.</string>
     <string name="back">Back</string>
 
     <string name="section_bluetooth_title">Bluetooth</string>
