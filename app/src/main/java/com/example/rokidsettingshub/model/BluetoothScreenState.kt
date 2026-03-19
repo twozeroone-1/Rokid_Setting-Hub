@@ -6,4 +6,5 @@ data class BluetoothScreenState(
     val myDevices: List<ManagedDevice> = emptyList(),
     val availableDevices: List<ManagedDevice> = emptyList(),
     val isScanning: Boolean = false,
+    val scanNotice: BluetoothScanNotice? = null,
 )

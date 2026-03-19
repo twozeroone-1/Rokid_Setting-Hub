@@ -31,10 +31,17 @@
     <string name="bluetooth_available_devices_empty">No scan results yet.</string>
     <string name="bluetooth_available_devices_summary">%1$d nearby devices.</string>
     <string name="bluetooth_scan_action_title">Scan Action</string>
+    <string name="bluetooth_system_settings_title">Open System Bluetooth</string>
+    <string name="bluetooth_system_settings_summary">Open Android Bluetooth settings for pairing and device management.</string>
     <string name="bluetooth_scan_action_idle">Ready to scan for nearby devices.</string>
     <string name="bluetooth_scan_action_scanning">Scanning for nearby devices.</string>
+    <string name="bluetooth_scan_action_permission_required">Nearby devices permission is required before scanning or pairing.</string>
+    <string name="bluetooth_scan_action_failed">Bluetooth scan did not start. Check Bluetooth state and nearby devices permission, then try again.</string>
     <string name="bluetooth_scan_button">Scan</string>
     <string name="bluetooth_stop_scan_button">Stop Scan</string>
+    <string name="bluetooth_scan_sub_function_button">Scan (Sub_Function)</string>
+    <string name="bluetooth_stop_scan_sub_function_button">Stop Scan (Sub_Function)</string>
+    <string name="bluetooth_open_system_settings">Open System Bluetooth</string>
     <string name="bluetooth_back_to_sections">Back to Bluetooth Sections</string>
     <string name="bluetooth_label_main_phone">Main Phone</string>
     <string name="bluetooth_device_type_phone">Phone</string>

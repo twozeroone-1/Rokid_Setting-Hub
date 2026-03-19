@@ -69,6 +69,7 @@ fun HubScreen(
     onBackFromBluetoothDetail: () -> Unit,
     onSectionSelected: (HubSection) -> Unit,
     onBackFromSection: () -> Unit,
+    onOpenSystemBluetoothSettings: () -> Unit,
     onOpenSystemWifiSettings: () -> Unit,
     onRegisterHardwareBackHandler: ((() -> Boolean)?) -> Unit,
     modifier: Modifier = Modifier,
@@ -86,6 +87,7 @@ fun HubScreen(
             onActivateSelectedSection = onActivateBluetoothSection,
             onBackFromDetail = onBackFromBluetoothDetail,
             onBack = onBackFromSection,
+            onOpenSystemBluetoothSettings = onOpenSystemBluetoothSettings,
             registerHardwareBackHandler = onRegisterHardwareBackHandler,
             modifier = modifier,
         )

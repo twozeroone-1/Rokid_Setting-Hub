@@ -128,6 +128,10 @@ class HubViewModel(
         bluetoothRepository.startScan()
     }
 
+    fun noteMissingBluetoothPermission() {
+        bluetoothRepository.noteMissingScanPermission()
+    }
+
     fun stopBluetoothScan() {
         bluetoothRepository.stopScan()
     }

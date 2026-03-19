@@ -1,11 +1,13 @@
 package com.example.rokidsettingshub.data.bluetooth
 
 import com.example.rokidsettingshub.data.storage.StoredMainPhone
+import com.example.rokidsettingshub.model.BluetoothScanNotice
 import com.example.rokidsettingshub.model.DeviceConnectionState
 import com.example.rokidsettingshub.model.DeviceType
 import com.example.rokidsettingshub.model.ManagedDevice
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -87,6 +89,25 @@ class BluetoothRepositoryContractTest {
         assertTrue(scanStarted)
         assertTrue(scanner.startRequested)
         assertTrue(repository.state.value.isScanning)
+        assertNull(repository.state.value.scanNotice)
+    }
+
+    @Test
+    fun scanStartFailureLeavesRepositoryIdleAndSetsFailureNotice() {
+        val scanner = FakeBluetoothScanner(startScanResult = false)
+        val repository = BluetoothRepository(
+            bondedDeviceSource = FakeBondedDeviceSource(emptyList()),
+            scanner = scanner,
+            deviceActions = FakeDeviceActions(),
+            loadMainPhone = { null },
+        )
+
+        val scanStarted = repository.startScan()
+
+        assertFalse(scanStarted)
+        assertTrue(scanner.startRequested)
+        assertFalse(repository.state.value.isScanning)
+        assertEquals(BluetoothScanNotice.StartFailed, repository.state.value.scanNotice)
     }
 
     @Test
@@ -211,6 +232,21 @@ class BluetoothRepositoryContractTest {
         assertTrue(deviceActions.forgottenAddresses.isEmpty())
     }
 
+    @Test
+    fun missingPermissionNoticeIsStoredInState() {
+        val repository = BluetoothRepository(
+            bondedDeviceSource = FakeBondedDeviceSource(emptyList()),
+            scanner = FakeBluetoothScanner(),
+            deviceActions = FakeDeviceActions(),
+            loadMainPhone = { null },
+        )
+
+        repository.noteMissingScanPermission()
+
+        assertEquals(BluetoothScanNotice.PermissionRequired, repository.state.value.scanNotice)
+        assertFalse(repository.state.value.isScanning)
+    }
+
     private fun device(
         address: String,
         name: String,
@@ -231,7 +267,9 @@ class BluetoothRepositoryContractTest {
         override fun loadBondedDevices(): List<ManagedDevice> = devices
     }
 
-    private class FakeBluetoothScanner : BluetoothScanner {
+    private class FakeBluetoothScanner(
+        private val startScanResult: Boolean = true,
+    ) : BluetoothScanner {
         private var listener: ((List<ManagedDevice>) -> Unit)? = null
         private var scanStateListener: ((Boolean) -> Unit)? = null
         private var deviceStateChangedListener: (() -> Unit)? = null
@@ -252,7 +290,7 @@ class BluetoothRepositoryContractTest {
 
         override fun startScan(): Boolean {
             startRequested = true
-            return true
+            return startScanResult
         }
 
         override fun stopScan() {

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application>
+        <receiver
+            android:name=".debug.DebugBluetoothCommandReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.example.rokidsettingshub.action.PAIR_BLUETOOTH_DEVICE" />
+                <action android:name="com.example.rokidsettingshub.action.SCAN_AND_PAIR_BLUETOOTH_DEVICE" />
+            </intent-filter>
+        </receiver>
+    </application>
+</manifest>

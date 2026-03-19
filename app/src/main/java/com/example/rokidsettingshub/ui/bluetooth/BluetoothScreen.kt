@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -29,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import com.example.rokidsettingshub.R
 import com.example.rokidsettingshub.model.BluetoothFocusSection
 import com.example.rokidsettingshub.model.BluetoothFocusState
+import com.example.rokidsettingshub.model.BluetoothScanNotice
 import com.example.rokidsettingshub.model.BluetoothScreenState
 import com.example.rokidsettingshub.model.DeviceConnectionState
 import com.example.rokidsettingshub.model.DeviceType
@@ -51,6 +53,7 @@ fun BluetoothScreen(
     onActivateSelectedSection: () -> Unit,
     onBackFromDetail: () -> Unit,
     onBack: () -> Unit,
+    onOpenSystemBluetoothSettings: () -> Unit,
     registerHardwareBackHandler: ((() -> Boolean)?) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -100,6 +103,7 @@ fun BluetoothScreen(
             onPairDevice = onPairDevice,
             onOpenDeviceDetails = onOpenDeviceDetails,
             onBack = onBackFromDetail,
+            onOpenSystemBluetoothSettings = onOpenSystemBluetoothSettings,
             modifier = modifier,
         )
     }
@@ -149,6 +153,7 @@ private fun BluetoothDetailScreen(
     onPairDevice: (String) -> Unit,
     onOpenDeviceDetails: (String) -> Unit,
     onBack: () -> Unit,
+    onOpenSystemBluetoothSettings: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val focusRequester = remember { FocusRequester() }
@@ -228,35 +233,43 @@ private fun BluetoothDetailScreen(
             }
             BluetoothFocusSection.Scan -> {
                 Button(
-                    onClick = {
-                        if (state.isScanning) {
-                            onStopScan()
-                        } else {
-                            onStartScan()
-                        }
-                    },
+                    onClick = onOpenSystemBluetoothSettings,
                     modifier = Modifier.fillMaxWidth(),
                 ) {
+                    Text(stringResource(R.string.bluetooth_open_system_settings))
+                }
+                if (canLaunchSystemBluetoothSettings(section)) {
                     Text(
-                        stringResource(
-                            if (state.isScanning) {
-                                R.string.bluetooth_stop_scan_button
-                            } else {
-                                R.string.bluetooth_scan_button
-                            },
-                        ),
+                        text = stringResource(R.string.bluetooth_system_settings_summary),
+                        style = MaterialTheme.typography.bodyMedium,
                     )
                 }
-                Text(
-                    text = stringResource(
-                        if (state.isScanning) {
-                            R.string.bluetooth_scan_action_scanning
-                        } else {
-                            R.string.bluetooth_scan_action_idle
+                if (canUseSubFunctionBluetoothScan(section)) {
+                    OutlinedButton(
+                        onClick = {
+                            if (state.isScanning) {
+                                onStopScan()
+                            } else {
+                                onStartScan()
+                            }
                         },
-                    ),
-                    style = MaterialTheme.typography.bodyMedium,
-                )
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text(
+                            stringResource(
+                                if (state.isScanning) {
+                                    R.string.bluetooth_stop_scan_sub_function_button
+                                } else {
+                                    R.string.bluetooth_scan_sub_function_button
+                                },
+                            ),
+                        )
+                    }
+                    Text(
+                        text = state.scanSummaryText(),
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                }
             }
         }
 
@@ -311,7 +324,7 @@ private fun BluetoothFocusSection.title(): String = when (this) {
     BluetoothFocusSection.MainPhone -> stringResource(R.string.bluetooth_main_phone_title)
     BluetoothFocusSection.MyDevices -> stringResource(R.string.bluetooth_my_devices_title)
     BluetoothFocusSection.AvailableDevices -> stringResource(R.string.bluetooth_available_devices_title)
-    BluetoothFocusSection.Scan -> stringResource(R.string.bluetooth_scan_action_title)
+    BluetoothFocusSection.Scan -> stringResource(R.string.bluetooth_system_settings_title)
 }
 
 @Composable
@@ -332,13 +345,7 @@ private fun BluetoothFocusSection.summary(state: BluetoothScreenState): String =
         R.string.bluetooth_available_devices_summary,
         state.availableDevices.size,
     )
-    BluetoothFocusSection.Scan -> stringResource(
-        if (state.isScanning) {
-            R.string.bluetooth_scan_action_scanning
-        } else {
-            R.string.bluetooth_scan_action_idle
-        },
-    )
+    BluetoothFocusSection.Scan -> stringResource(R.string.bluetooth_system_settings_summary)
 }
 
 internal fun bluetoothOverviewPageTarget(selectedSection: BluetoothFocusSection): Int =
@@ -346,6 +353,12 @@ internal fun bluetoothOverviewPageTarget(selectedSection: BluetoothFocusSection)
         selectedIndex = BluetoothFocusSection.entries.indexOf(selectedSection),
         itemCount = BluetoothFocusSection.entries.size,
     )
+
+internal fun canLaunchSystemBluetoothSettings(section: BluetoothFocusSection): Boolean =
+    section == BluetoothFocusSection.Scan
+
+internal fun canUseSubFunctionBluetoothScan(section: BluetoothFocusSection): Boolean =
+    section == BluetoothFocusSection.Scan
 
 @Composable
 private fun ManagedDevice.supportingText(): String {
@@ -370,5 +383,19 @@ private fun ManagedDevice.supportingText(): String {
             append(" | ")
             append(stringResource(R.string.bluetooth_label_main_phone))
         }
+    }
+}
+
+@Composable
+private fun BluetoothScreenState.scanSummaryText(): String {
+    return when {
+        isScanning -> stringResource(R.string.bluetooth_scan_action_scanning)
+        scanNotice == BluetoothScanNotice.PermissionRequired -> {
+            stringResource(R.string.bluetooth_scan_action_permission_required)
+        }
+        scanNotice == BluetoothScanNotice.StartFailed -> {
+            stringResource(R.string.bluetooth_scan_action_failed)
+        }
+        else -> stringResource(R.string.bluetooth_scan_action_idle)
     }
 }

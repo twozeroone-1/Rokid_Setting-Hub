@@ -3,14 +3,20 @@ package com.example.rokidsettingshub
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import android.view.KeyEvent
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.collectAsState
+import androidx.core.content.ContextCompat
+import com.example.rokidsettingshub.data.bluetooth.BluetoothPermissionRequirements
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -24,6 +30,19 @@ import com.example.rokidsettingshub.viewmodel.HubViewModel
 
 class MainActivity : ComponentActivity() {
     private var hardwareBackHandler: (() -> Boolean)? = null
+    private var pendingBluetoothAction: (() -> Unit)? = null
+    private var activeHubViewModel: HubViewModel? = null
+    private val bluetoothPermissionLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { results ->
+            val granted = results.values.all { it }
+            val pendingAction = pendingBluetoothAction
+            pendingBluetoothAction = null
+            if (granted) {
+                pendingAction?.invoke()
+            } else {
+                activeHubViewModel?.noteMissingBluetoothPermission()
+            }
+        }
 
     private val bluetoothRepository by lazy {
         createBluetoothRepository(
@@ -64,6 +83,9 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             val hubViewModel: HubViewModel = viewModel(factory = hubViewModelFactory)
+            SideEffect {
+                activeHubViewModel = hubViewModel
+            }
             val currentSection by hubViewModel.currentSection.collectAsState()
             val selectedHubSection by hubViewModel.selectedHubSection.collectAsState()
             val bluetoothScreenState by hubViewModel.bluetoothScreenState.collectAsState()
@@ -83,15 +105,28 @@ class MainActivity : ComponentActivity() {
                 onMoveHubSelection = hubViewModel::moveHubSelection,
                 onActivateHubSection = hubViewModel::activateSelectedHubSection,
                 onMoveBluetoothFocus = hubViewModel::moveBluetoothFocus,
-                onStartBluetoothScan = hubViewModel::startBluetoothScan,
+                onStartBluetoothScan = {
+                    runWithBluetoothPermissions {
+                        hubViewModel.startBluetoothScan()
+                    }
+                },
                 onStopBluetoothScan = hubViewModel::stopBluetoothScan,
-                onPairBluetoothDevice = hubViewModel::pairBluetoothDevice,
-                onOpenBluetoothDeviceDetails = hubViewModel::openBluetoothDeviceDetails,
+                onPairBluetoothDevice = { address ->
+                    runWithBluetoothPermissions {
+                        hubViewModel.pairBluetoothDevice(address)
+                    }
+                },
+                onOpenBluetoothDeviceDetails = { address ->
+                    runWithBluetoothPermissions {
+                        hubViewModel.openBluetoothDeviceDetails(address)
+                    }
+                },
                 onSelectBluetoothSection = hubViewModel::selectBluetoothSection,
                 onActivateBluetoothSection = hubViewModel::activateSelectedBluetoothSection,
                 onBackFromBluetoothDetail = hubViewModel::handleBluetoothBack,
                 onSectionSelected = hubViewModel::selectSection,
                 onBackFromSection = hubViewModel::returnToHub,
+                onOpenSystemBluetoothSettings = ::openSystemBluetoothSettings,
                 onOpenSystemWifiSettings = ::openSystemWifiSettings,
                 onRegisterHardwareBackHandler = { handler -> hardwareBackHandler = handler },
             )
@@ -106,6 +141,35 @@ class MainActivity : ComponentActivity() {
         }
 
         return super.dispatchKeyEvent(event)
+    }
+
+    private fun runWithBluetoothPermissions(action: () -> Unit) {
+        val requiredPermissions = BluetoothPermissionRequirements.runtimePermissionsFor(Build.VERSION.SDK_INT)
+        if (requiredPermissions.isEmpty() || requiredPermissions.all(::hasPermission)) {
+            action()
+            return
+        }
+
+        pendingBluetoothAction = action
+        bluetoothPermissionLauncher.launch(requiredPermissions.toTypedArray())
+    }
+
+    private fun hasPermission(permission: String): Boolean {
+        return ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED
+    }
+
+    private fun openSystemBluetoothSettings() {
+        val bluetoothIntent = Intent(Settings.ACTION_BLUETOOTH_SETTINGS)
+        val fallbackIntent = Intent(Settings.ACTION_SETTINGS)
+        val targetIntent = if (bluetoothIntent.resolveActivity(packageManager) != null) {
+            bluetoothIntent
+        } else {
+            fallbackIntent
+        }
+
+        runCatching {
+            startActivity(targetIntent)
+        }
     }
 
     private fun openSystemWifiSettings() {

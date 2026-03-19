@@ -10,6 +10,7 @@ import com.example.rokidsettingshub.data.wifiinfo.WifiInfoSource
 import com.example.rokidsettingshub.model.BatteryInfoSnapshot
 import com.example.rokidsettingshub.model.BatteryInfoState
 import com.example.rokidsettingshub.model.BluetoothFocusSection
+import com.example.rokidsettingshub.model.BluetoothScanNotice
 import com.example.rokidsettingshub.data.storage.StoredMainPhone
 import com.example.rokidsettingshub.model.DeviceInfoSnapshot
 import com.example.rokidsettingshub.model.DeviceInfoState
@@ -280,6 +281,21 @@ class HubViewModelTest {
         viewModel.stopBluetoothScan()
 
         assertFalse(viewModel.bluetoothScreenState.value.isScanning)
+    }
+
+    @Test
+    fun notingMissingBluetoothPermissionUpdatesBluetoothState() {
+        val repository = BluetoothRepository(
+            bondedDeviceSource = FakeBondedDeviceSource(emptyList()),
+            scanner = FakeBluetoothScanner(),
+            deviceActions = FakeBluetoothDeviceActions(),
+            loadMainPhone = { null },
+        )
+        val viewModel = HubViewModel(bluetoothRepository = repository)
+
+        viewModel.noteMissingBluetoothPermission()
+
+        assertEquals(BluetoothScanNotice.PermissionRequired, viewModel.bluetoothScreenState.value.scanNotice)
     }
 
     @Test

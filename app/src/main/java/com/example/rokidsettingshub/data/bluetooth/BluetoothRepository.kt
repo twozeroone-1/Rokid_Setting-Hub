@@ -1,6 +1,7 @@
 package com.example.rokidsettingshub.data.bluetooth
 
 import com.example.rokidsettingshub.data.storage.StoredMainPhone
+import com.example.rokidsettingshub.model.BluetoothScanNotice
 import com.example.rokidsettingshub.model.BluetoothScreenState
 import com.example.rokidsettingshub.model.ManagedDevice
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -45,25 +46,34 @@ class BluetoothRepository(
             )
         }
         scanner.setScanStateListener { isScanning ->
-            _state.value = _state.value.copy(isScanning = isScanning)
+            _state.value = _state.value.copy(
+                isScanning = isScanning,
+                scanNotice = if (isScanning) null else _state.value.scanNotice,
+            )
         }
         scanner.setDeviceStateChangedListener(::refreshBondedDevices)
     }
 
     fun startScan(): Boolean {
         val scanStarted = scanner.startScan()
-        if (scanStarted) {
-            _state.value = _state.value.copy(
-                isScanning = true,
-                availableDevices = emptyList(),
-            )
-        }
+        _state.value = _state.value.copy(
+            isScanning = scanStarted,
+            availableDevices = emptyList(),
+            scanNotice = if (scanStarted) null else BluetoothScanNotice.StartFailed,
+        )
         return scanStarted
     }
 
     fun stopScan() {
         scanner.stopScan()
-        _state.value = _state.value.copy(isScanning = false)
+        _state.value = _state.value.copy(isScanning = false, scanNotice = null)
+    }
+
+    fun noteMissingScanPermission() {
+        _state.value = _state.value.copy(
+            isScanning = false,
+            scanNotice = BluetoothScanNotice.PermissionRequired,
+        )
     }
 
     fun pair(address: String): Boolean {
